@@ -26,8 +26,8 @@ class AudioRecorder: NSObject, ObservableObject {
     private func setupSession() {
         let session = AVAudioSession.sharedInstance()
         do {
-            // "measurement" mode for cleaner audio (less gain control/processing)
-            try session.setCategory(.playAndRecord, mode: .measurement, options: [.duckOthers, .defaultToSpeaker, .allowBluetooth])
+            // "default" mode is safer for Simulator and generic use
+            try session.setCategory(.playAndRecord, mode: .default, options: [.duckOthers, .defaultToSpeaker, .allowBluetooth])
             try session.setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
             errorMessage = "Failed to setup audio session: \(error.localizedDescription)"
@@ -146,6 +146,7 @@ class AudioRecorder: NSObject, ObservableObject {
         if !channelDataValue.isEmpty {
              let sum = channelDataValue.reduce(0) { $0 + $1 * $1 }
              rms = sqrt(sum / Float(channelDataValue.count))
+             if rms.isNaN { rms = 0.0 }
              let status = "Input: \(inputFrameCount) -> Output: \(outputBuffer.frameLength), RMS: \(String(format: "%.4f", rms))"
              print(status)
              DispatchQueue.main.async {
