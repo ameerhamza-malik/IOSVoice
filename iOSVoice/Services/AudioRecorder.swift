@@ -11,6 +11,7 @@ class AudioRecorder: NSObject, ObservableObject {
     
     @Published var isRecording = false
     @Published var errorMessage: String?
+    @Published var debugRMS: String = "RMS: --"
     
     override init() {
         super.init()
@@ -143,10 +144,13 @@ class AudioRecorder: NSObject, ObservableObject {
         // DEBUG: Calculate RMS to verify signal quality
         var rms: Float = 0.0
         if !channelDataValue.isEmpty {
-             // Simple RMS for debug
              let sum = channelDataValue.reduce(0) { $0 + $1 * $1 }
              rms = sqrt(sum / Float(channelDataValue.count))
-             print("Input: \(inputFrameCount) -> Output: \(outputBuffer.frameLength), RMS: \(String(format: "%.4f", rms))")
+             let status = "Input: \(inputFrameCount) -> Output: \(outputBuffer.frameLength), RMS: \(String(format: "%.4f", rms))"
+             print(status)
+             DispatchQueue.main.async {
+                 self.debugRMS = status
+             }
         }
         
         onAudioBuffer?(channelDataValue)

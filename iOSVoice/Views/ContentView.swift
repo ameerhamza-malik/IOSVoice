@@ -47,6 +47,11 @@ struct ContentView: View {
                         .multilineTextAlignment(.center)
                 }
 
+                Text(audioRecorder.debugRMS)
+                    .font(.caption2)
+                    .foregroundColor(.gray)
+                    .monospaced()
+
                 // Status & Visualizer
                 VStack(spacing: 20) {
                     if whisperManager.isModelLoaded {
