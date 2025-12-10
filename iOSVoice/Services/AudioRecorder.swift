@@ -127,7 +127,7 @@ class AudioRecorder: NSObject, ObservableObject {
                 outStatus.pointee = .haveData
                 return buffer
             } else {
-                outStatus.pointee = .noDataEndOfStream
+                outStatus.pointee = .endOfStream
                 return nil
             }
         }
