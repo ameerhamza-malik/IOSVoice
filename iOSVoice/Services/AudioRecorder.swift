@@ -117,8 +117,6 @@ class AudioRecorder: NSObject, ObservableObject {
         guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: targetFormat, frameCapacity: targetFrameCount) else { return }
         
         var error: NSError? = nil
-        
-        // Has-supplied state for the block
         var haveSuppliedData = false
         
         let inputBlock: AVAudioConverterInputBlock = { inNumPackets, outStatus in
@@ -141,6 +139,15 @@ class AudioRecorder: NSObject, ObservableObject {
         
         guard let channelData = outputBuffer.floatChannelData?[0] else { return }
         let channelDataValue = Array(UnsafeBufferPointer(start: channelData, count: Int(outputBuffer.frameLength)))
+        
+        // DEBUG: Calculate RMS to verify signal quality
+        var rms: Float = 0.0
+        if !channelDataValue.isEmpty {
+             // Simple RMS for debug
+             let sum = channelDataValue.reduce(0) { $0 + $1 * $1 }
+             rms = sqrt(sum / Float(channelDataValue.count))
+             print("Input: \(inputFrameCount) -> Output: \(outputBuffer.frameLength), RMS: \(String(format: "%.4f", rms))")
+        }
         
         onAudioBuffer?(channelDataValue)
     }
