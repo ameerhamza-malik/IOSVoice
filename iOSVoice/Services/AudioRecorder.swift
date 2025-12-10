@@ -31,6 +31,14 @@ class AudioRecorder: NSObject, ObservableObject {
         } catch {
             errorMessage = "Failed to setup audio session: \(error.localizedDescription)"
         }
+        
+        session.requestRecordPermission { [weak self] allowed in
+            DispatchQueue.main.async {
+                if !allowed {
+                    self?.errorMessage = "Microphone permission denied. Please enable it in Settings."
+                }
+            }
+        }
     }
     
     private func setupInterruptionHandling() {
@@ -63,6 +71,10 @@ class AudioRecorder: NSObject, ObservableObject {
         }
     }
     
+    // Converter
+    private var audioConverter: AVAudioConverter?
+    private var targetFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 16000, channels: 1, interleaved: false)!
+    
     func startRecording() {
         guard !audioEngine.isRunning else { return }
         
@@ -71,11 +83,8 @@ class AudioRecorder: NSObject, ObservableObject {
         inputNode = audioEngine.inputNode
         let inputFormat = inputNode!.outputFormat(forBus: 0)
         
-        // Target format: 16kHz, Mono, Float32 (Whisper Standard)
-        // We will install a tap and convert manually if needed, or rely on just grabbing float data.
-        // NOTE: CoreAudio Taps usually give you the hardware format.
-        // For production, we should downsample if HW is 44.1/48kHz.
-        // For this implementation, we simply extract the float channel.
+        // Setup Converter
+        audioConverter = AVAudioConverter(from: inputFormat, to: targetFormat)
         
         inputNode!.installTap(onBus: 0, bufferSize: 1024, format: inputFormat) { [weak self] (buffer, time) in
             self?.processBuffer(buffer)
@@ -96,13 +105,30 @@ class AudioRecorder: NSObject, ObservableObject {
     }
     
     private func processBuffer(_ buffer: AVAudioPCMBuffer) {
-        guard let channelData = buffer.floatChannelData?[0] else { return }
-        let channelDataValue = Array(UnsafeBufferPointer(start: channelData, count: Int(buffer.frameLength)))
+        guard let converter = audioConverter else { return }
         
-        // Here we arguably should downsample to 16kHz if the input is 44.1/48kHz.
-        // WhisperKit 0.2 may handle resampling, or we can use a basic decimation if needed.
-        // For simplicity/speed in this template, we pass raw. 
-        // Ideally: Resample logic goes here.
+        // Calculate output buffer size
+        let inputFrameCount = AVAudioFrameCount(buffer.frameLength)
+        let ratio = targetFormat.sampleRate / buffer.format.sampleRate
+        let targetFrameCount = AVAudioFrameCount(Double(inputFrameCount) * ratio)
+        
+        guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: targetFormat, frameCapacity: targetFrameCount) else { return }
+        
+        var error: NSError? = nil
+        let inputBlock: AVAudioConverterInputBlock = { inNumPackets, outStatus in
+            outStatus.pointee = .haveData
+            return buffer
+        }
+        
+        converter.convert(to: outputBuffer, error: &error, withInputFrom: inputBlock)
+        
+        if let error = error {
+            print("Conversion error: \(error.localizedDescription)")
+            return
+        }
+        
+        guard let channelData = outputBuffer.floatChannelData?[0] else { return }
+        let channelDataValue = Array(UnsafeBufferPointer(start: channelData, count: Int(outputBuffer.frameLength)))
         
         onAudioBuffer?(channelDataValue)
     }

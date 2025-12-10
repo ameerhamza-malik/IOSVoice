@@ -38,6 +38,15 @@ struct ContentView: View {
                 .background(RoundedRectangle(cornerRadius: 16).fill(Color(UIColor.secondarySystemBackground)))
                 .padding(.horizontal)
                 
+                // Error Message
+                if let errorMessage = audioRecorder.errorMessage {
+                    Text(errorMessage)
+                        .foregroundColor(.red)
+                        .font(.caption)
+                        .padding(.horizontal)
+                        .multilineTextAlignment(.center)
+                }
+
                 // Status & Visualizer
                 VStack(spacing: 20) {
                     if whisperManager.isModelLoaded {
