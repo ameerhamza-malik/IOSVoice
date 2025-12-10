@@ -107,17 +107,29 @@ class AudioRecorder: NSObject, ObservableObject {
     private func processBuffer(_ buffer: AVAudioPCMBuffer) {
         guard let converter = audioConverter else { return }
         
-        // Calculate output buffer size
         let inputFrameCount = AVAudioFrameCount(buffer.frameLength)
         let ratio = targetFormat.sampleRate / buffer.format.sampleRate
         let targetFrameCount = AVAudioFrameCount(Double(inputFrameCount) * ratio)
         
+        // Safety check for empty buffer
+        if targetFrameCount == 0 { return }
+        
         guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: targetFormat, frameCapacity: targetFrameCount) else { return }
         
         var error: NSError? = nil
+        
+        // Has-supplied state for the block
+        var haveSuppliedData = false
+        
         let inputBlock: AVAudioConverterInputBlock = { inNumPackets, outStatus in
-            outStatus.pointee = .haveData
-            return buffer
+            if !haveSuppliedData {
+                haveSuppliedData = true
+                outStatus.pointee = .haveData
+                return buffer
+            } else {
+                outStatus.pointee = .noDataEndOfStream
+                return nil
+            }
         }
         
         converter.convert(to: outputBuffer, error: &error, withInputFrom: inputBlock)
