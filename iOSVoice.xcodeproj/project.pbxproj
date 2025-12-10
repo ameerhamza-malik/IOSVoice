@@ -6,27 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXContainerItemProxy section */
-		F35DC6422EE9BCD600EF0377 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = F35DC62C2EE9BCD300EF0377 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = F35DC6332EE9BCD300EF0377;
-			remoteInfo = iOSVoice;
-		};
-		F35DC64C2EE9BCD600EF0377 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = F35DC62C2EE9BCD300EF0377 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = F35DC6332EE9BCD300EF0377;
-			remoteInfo = iOSVoice;
-		};
-/* End PBXContainerItemProxy section */
+/* Begin PBXBuildFile section */
+		F35DC68F2EE9C14B00EF0377 /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = F35DC68E2EE9C14B00EF0377 /* WhisperKit */; };
+		F35DC6912EE9C14B00EF0377 /* whisperkit-cli in Frameworks */ = {isa = PBXBuildFile; productRef = F35DC6902EE9C14B00EF0377 /* whisperkit-cli */; };
+/* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		F35DC6342EE9BCD300EF0377 /* iOSVoice.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iOSVoice.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		F35DC6412EE9BCD600EF0377 /* iOSVoiceTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = iOSVoiceTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		F35DC64B2EE9BCD600EF0377 /* iOSVoiceUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = iOSVoiceUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -52,20 +38,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		F35DC63E2EE9BCD600EF0377 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		F35DC6482EE9BCD600EF0377 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
+				F35DC68F2EE9C14B00EF0377 /* WhisperKit in Frameworks */,
+				F35DC6912EE9C14B00EF0377 /* whisperkit-cli in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -86,8 +60,6 @@
 			isa = PBXGroup;
 			children = (
 				F35DC6342EE9BCD300EF0377 /* iOSVoice.app */,
-				F35DC6412EE9BCD600EF0377 /* iOSVoiceTests.xctest */,
-				F35DC64B2EE9BCD600EF0377 /* iOSVoiceUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -112,56 +84,12 @@
 			);
 			name = iOSVoice;
 			packageProductDependencies = (
+				F35DC68E2EE9C14B00EF0377 /* WhisperKit */,
+				F35DC6902EE9C14B00EF0377 /* whisperkit-cli */,
 			);
 			productName = iOSVoice;
 			productReference = F35DC6342EE9BCD300EF0377 /* iOSVoice.app */;
 			productType = "com.apple.product-type.application";
-		};
-		F35DC6402EE9BCD600EF0377 /* iOSVoiceTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = F35DC6582EE9BCD600EF0377 /* Build configuration list for PBXNativeTarget "iOSVoiceTests" */;
-			buildPhases = (
-				F35DC63D2EE9BCD600EF0377 /* Sources */,
-				F35DC63E2EE9BCD600EF0377 /* Frameworks */,
-				F35DC63F2EE9BCD600EF0377 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				F35DC6432EE9BCD600EF0377 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				F35DC6442EE9BCD600EF0377 /* iOSVoiceTests */,
-			);
-			name = iOSVoiceTests;
-			packageProductDependencies = (
-			);
-			productName = iOSVoiceTests;
-			productReference = F35DC6412EE9BCD600EF0377 /* iOSVoiceTests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
-		};
-		F35DC64A2EE9BCD600EF0377 /* iOSVoiceUITests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = F35DC65B2EE9BCD600EF0377 /* Build configuration list for PBXNativeTarget "iOSVoiceUITests" */;
-			buildPhases = (
-				F35DC6472EE9BCD600EF0377 /* Sources */,
-				F35DC6482EE9BCD600EF0377 /* Frameworks */,
-				F35DC6492EE9BCD600EF0377 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				F35DC64D2EE9BCD600EF0377 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				F35DC64E2EE9BCD600EF0377 /* iOSVoiceUITests */,
-			);
-			name = iOSVoiceUITests;
-			packageProductDependencies = (
-			);
-			productName = iOSVoiceUITests;
-			productReference = F35DC64B2EE9BCD600EF0377 /* iOSVoiceUITests.xctest */;
-			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
 
@@ -176,14 +104,6 @@
 					F35DC6332EE9BCD300EF0377 = {
 						CreatedOnToolsVersion = 26.1;
 					};
-					F35DC6402EE9BCD600EF0377 = {
-						CreatedOnToolsVersion = 26.1;
-						TestTargetID = F35DC6332EE9BCD300EF0377;
-					};
-					F35DC64A2EE9BCD600EF0377 = {
-						CreatedOnToolsVersion = 26.1;
-						TestTargetID = F35DC6332EE9BCD300EF0377;
-					};
 				};
 			};
 			buildConfigurationList = F35DC62F2EE9BCD300EF0377 /* Build configuration list for PBXProject "iOSVoice" */;
@@ -195,34 +115,21 @@
 			);
 			mainGroup = F35DC62B2EE9BCD300EF0377;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				F35DC68D2EE9C14B00EF0377 /* XCRemoteSwiftPackageReference "WhisperKit" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = F35DC6352EE9BCD300EF0377 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				F35DC6332EE9BCD300EF0377 /* iOSVoice */,
-				F35DC6402EE9BCD600EF0377 /* iOSVoiceTests */,
-				F35DC64A2EE9BCD600EF0377 /* iOSVoiceUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		F35DC6322EE9BCD300EF0377 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		F35DC63F2EE9BCD600EF0377 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		F35DC6492EE9BCD600EF0377 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -239,34 +146,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		F35DC63D2EE9BCD600EF0377 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		F35DC6472EE9BCD600EF0377 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXTargetDependency section */
-		F35DC6432EE9BCD600EF0377 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = F35DC6332EE9BCD300EF0377 /* iOSVoice */;
-			targetProxy = F35DC6422EE9BCD600EF0377 /* PBXContainerItemProxy */;
-		};
-		F35DC64D2EE9BCD600EF0377 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = F35DC6332EE9BCD300EF0377 /* iOSVoice */;
-			targetProxy = F35DC64C2EE9BCD600EF0377 /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		F35DC6532EE9BCD600EF0377 /* Debug */ = {
@@ -454,90 +334,6 @@
 			};
 			name = Release;
 		};
-		F35DC6592EE9BCD600EF0377 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 6S4T9GVTMN;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = braza.iOSVoiceTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/iOSVoice.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/iOSVoice";
-			};
-			name = Debug;
-		};
-		F35DC65A2EE9BCD600EF0377 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 6S4T9GVTMN;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = braza.iOSVoiceTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/iOSVoice.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/iOSVoice";
-			};
-			name = Release;
-		};
-		F35DC65C2EE9BCD600EF0377 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 6S4T9GVTMN;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = braza.iOSVoiceUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = iOSVoice;
-			};
-			name = Debug;
-		};
-		F35DC65D2EE9BCD600EF0377 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 6S4T9GVTMN;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = braza.iOSVoiceUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = iOSVoice;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -559,25 +355,31 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		F35DC6582EE9BCD600EF0377 /* Build configuration list for PBXNativeTarget "iOSVoiceTests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				F35DC6592EE9BCD600EF0377 /* Debug */,
-				F35DC65A2EE9BCD600EF0377 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		F35DC65B2EE9BCD600EF0377 /* Build configuration list for PBXNativeTarget "iOSVoiceUITests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				F35DC65C2EE9BCD600EF0377 /* Debug */,
-				F35DC65D2EE9BCD600EF0377 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		F35DC68D2EE9C14B00EF0377 /* XCRemoteSwiftPackageReference "WhisperKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/argmaxinc/WhisperKit";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		F35DC68E2EE9C14B00EF0377 /* WhisperKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F35DC68D2EE9C14B00EF0377 /* XCRemoteSwiftPackageReference "WhisperKit" */;
+			productName = WhisperKit;
+		};
+		F35DC6902EE9C14B00EF0377 /* whisperkit-cli */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F35DC68D2EE9C14B00EF0377 /* XCRemoteSwiftPackageReference "WhisperKit" */;
+			productName = "whisperkit-cli";
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = F35DC62C2EE9BCD300EF0377 /* Project object */;
 }
