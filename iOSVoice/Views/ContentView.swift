@@ -83,6 +83,9 @@ struct ContentView: View {
                     HStack(spacing: 40) {
                         // Import Button
                         Button(action: {
+                            if audioRecorder.isRecording {
+                                audioRecorder.stopRecording()
+                            }
                             showFileImporter = true
                         }) {
                             VStack {
@@ -99,7 +102,8 @@ struct ContentView: View {
                                     .foregroundColor(.primary)
                             }
                         }
-                        .disabled(!whisperManager.isModelLoaded || audioRecorder.isRecording || isProcessingFile)
+                        // Only disable if processing or model strictly not ready
+                        .disabled(!whisperManager.isModelLoaded || isProcessingFile)
                         
                         // Mic Button
                         Button(action: {
@@ -135,13 +139,14 @@ struct ContentView: View {
                 print("Error: \(error)")
             }
         }
-        .fileImporter(isPresented: $showFileImporter, allowedContentTypes: [UTType.audio], allowsMultipleSelection: false) { result in
+        .fileImporter(isPresented: $showFileImporter, allowedContentTypes: [UTType.audio, UTType.movie], allowsMultipleSelection: false) { result in
             switch result {
             case .success(let urls):
                 guard let url = urls.first else { return }
                 processFile(url: url)
             case .failure(let error):
                 print("Import failed: \(error.localizedDescription)")
+                whisperManager.currentText = "Import Failed: \(error.localizedDescription)"
             }
         }
     }
