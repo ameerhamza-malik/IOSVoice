@@ -105,4 +105,26 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
             }
         }
     }
+    func transcribeFile(samples: [Float]) async {
+        guard let pipe = whisperKit else { return }
+        
+        await MainActor.run {
+            self.currentText = "Transcribing file..."
+            self.partialText = ""
+        }
+        
+        do {
+            let results = try await pipe.transcribe(audioArray: samples)
+            let text = results.map { $0.text }.joined(separator: " ")
+            
+            await MainActor.run {
+                self.currentText = text
+            }
+        } catch {
+            print("File Transcription Error: \(error)")
+            await MainActor.run {
+                self.currentText = "Error: \(error.localizedDescription)"
+            }
+        }
+    }
 }

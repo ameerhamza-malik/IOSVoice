@@ -1,8 +1,13 @@
-import SwiftUI
+import UniformTypeIdentifiers
 
 struct ContentView: View {
     @StateObject private var audioRecorder = AudioRecorder()
     @StateObject private var whisperManager = WhisperManager()
+    
+    // File Import State
+    @State private var showFileImporter = false
+    @State private var isProcessingFile = false
+    private let audioFileService = AudioFileService()
     
     var body: some View {
         ZStack {
@@ -62,6 +67,8 @@ struct ContentView: View {
                             Text("Listening...")
                                 .font(.caption)
                                 .foregroundColor(.gray)
+                        } else if isProcessingFile {
+                            ProgressView("Processing File...")
                         } else {
                             Text("Ready to Transcribe")
                                 .font(.caption)
@@ -71,21 +78,50 @@ struct ContentView: View {
                         ProgressView("Loading Optimized Model...")
                     }
                     
-                    // Main Action Button
-                    Button(action: {
-                        toggleRecording()
-                    }) {
-                        Image(systemName: audioRecorder.isRecording ? "stop.fill" : "mic.fill")
-                            .font(.title2)
-                            .frame(width: 70, height: 70)
-                            .background(audioRecorder.isRecording ? Color.red.gradient : Color.blue.gradient)
-                            .foregroundColor(.white)
-                            .clipShape(Circle())
-                            .shadow(radius: 5)
-                            .scaleEffect(audioRecorder.isRecording ? 1.1 : 1.0)
-                            .animation(.spring(), value: audioRecorder.isRecording)
+                    // Controls
+                    HStack(spacing: 40) {
+                        // Import Button
+                        Button(action: {
+                            showFileImporter = true
+                        }) {
+                            VStack {
+                                Image(systemName: "square.and.arrow.down")
+                                    .font(.title2)
+                                    .foregroundColor(.white)
+                                    .frame(width: 60, height: 60)
+                                    .background(Color.blue.gradient)
+                                    .clipShape(Circle())
+                                    .shadow(radius: 4)
+                                
+                                Text("Import")
+                                    .font(.caption)
+                                    .foregroundColor(.primary)
+                            }
+                        }
+                        .disabled(!whisperManager.isModelLoaded || audioRecorder.isRecording || isProcessingFile)
+                        
+                        // Mic Button
+                        Button(action: {
+                            toggleRecording()
+                        }) {
+                            VStack {
+                                Image(systemName: audioRecorder.isRecording ? "stop.fill" : "mic.fill")
+                                    .font(.title2)
+                                    .foregroundColor(.white)
+                                    .frame(width: 70, height: 70)
+                                    .background(audioRecorder.isRecording ? Color.red.gradient : Color.blue.gradient)
+                                    .clipShape(Circle())
+                                    .shadow(radius: 5)
+                                    .scaleEffect(audioRecorder.isRecording ? 1.1 : 1.0)
+                                    .animation(.spring(), value: audioRecorder.isRecording)
+                                
+                                Text(audioRecorder.isRecording ? "Stop" : "Record")
+                                    .font(.caption)
+                                    .foregroundColor(.primary)
+                            }
+                        }
+                        .disabled(!whisperManager.isModelLoaded || isProcessingFile)
                     }
-                    .disabled(!whisperManager.isModelLoaded)
                 }
                 .padding(.bottom, 40)
             }
@@ -96,6 +132,15 @@ struct ContentView: View {
         .onChange(of: audioRecorder.errorMessage) { newValue in
             if let error = newValue {
                 print("Error: \(error)")
+            }
+        }
+        .fileImporter(isPresented: $showFileImporter, allowedContentTypes: [UTType.audio], allowsMultipleSelection: false) { result in
+            switch result {
+            case .success(let urls):
+                guard let url = urls.first else { return }
+                processFile(url: url)
+            case .failure(let error):
+                print("Import failed: \(error.localizedDescription)")
             }
         }
     }
@@ -117,6 +162,30 @@ struct ContentView: View {
         } else {
             whisperManager.resetState()
             audioRecorder.startRecording()
+        }
+    }
+    
+    private func processFile(url: URL) {
+        guard url.startAccessingSecurityScopedResource() else {
+            print("Access denied")
+            return
+        }
+        defer { url.stopAccessingSecurityScopedResource() }
+        
+        isProcessingFile = true
+        whisperManager.resetState()
+        
+        Task {
+            do {
+                let samples = try await audioFileService.loadAudio(url: url)
+                await whisperManager.transcribeFile(samples: samples)
+            } catch {
+                print("File Processing Error: \(error)")
+            }
+            
+            await MainActor.run {
+                isProcessingFile = false
+            }
         }
     }
 }
