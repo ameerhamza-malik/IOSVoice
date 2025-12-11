@@ -13,7 +13,7 @@ class SpeechBufferManager {
     
     // Configuration
     private let sampleRate: Double = 16000.0 // Whisper standard
-    private let silenceThreshold: Float = 0.02 // Adjust based on env
+    private var silenceThreshold: Float = 0.001 // Lowered for sensitivity
     private let minSpeechDuration: Double = 0.5 // Seconds
     private let maxSilenceDuration: Double = 0.8 // Wait 800ms of silence to finalize
     
@@ -41,6 +41,7 @@ class SpeechBufferManager {
         
         if isLoud {
             if !isSpeechActive {
+                print("VAD: Speech Started (RMS: \(rms))")
                 isSpeechActive = true
                 delegate?.didDetectSpeechStart()
             }
