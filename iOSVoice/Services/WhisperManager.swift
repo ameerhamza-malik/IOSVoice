@@ -113,12 +113,18 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
             self.partialText = ""
         }
         
+        let startTime = Date()
+        
         do {
             let results = try await pipe.transcribe(audioArray: samples)
+            let timeTaken = Date().timeIntervalSince(startTime)
             let text = results.map { $0.text }.joined(separator: " ")
             
+            let finalOutput = "\(text)\n\n[Time: \(String(format: "%.2f", timeTaken))s]"
+            print("Transcription Time: \(timeTaken)s")
+            
             await MainActor.run {
-                self.currentText = text
+                self.currentText = finalOutput
             }
         } catch {
             print("File Transcription Error: \(error)")
