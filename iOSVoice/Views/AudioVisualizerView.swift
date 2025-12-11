@@ -24,7 +24,8 @@ struct AudioVisualizerView: View {
         let maxHeight: CGFloat = 50
         
         // Normalize level
-        let normalized = CGFloat(min(max(level * 5, 0), 1)) 
+        let safeLevel = (level.isNaN || level.isInfinite) ? 0 : level
+        let normalized = CGFloat(min(max(safeLevel * 5, 0), 1)) 
         
         // Randomize slightly for "alive" look
         let randomFactor = CGFloat.random(in: 0.8...1.2)

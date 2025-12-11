@@ -156,7 +156,11 @@ class AudioRecorder: NSObject, ObservableObject {
         
         // Apply Gain (Amplification)
         // Simulator/Hardware mics can be very quiet. Boost by 10x.
-        let amplifiedData = channelDataValue.map { $0 * 10.0 }
+        // Also sanitize for NaN
+        let amplifiedData = channelDataValue.map { val -> Float in
+            let amplified = val * 10.0
+            return amplified.isNaN ? 0.0 : amplified
+        }
         
         onAudioBuffer?(amplifiedData)
     }
