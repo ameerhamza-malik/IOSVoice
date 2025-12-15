@@ -39,6 +39,15 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
                 self.modelLoadTime = duration
                 print("WhisperKit loaded in \(String(format: "%.2f", duration))s")
             }
+            
+            // Warmup: Force full model compilation with dummy audio
+            print("Warming up model...")
+            let warmupStart = Date()
+            let dummyAudio = [Float](repeating: 0.0, count: 16000) // 1 second of silence at 16kHz
+            _ = try? await pipe.transcribe(audioArray: dummyAudio)
+            let warmupDuration = Date().timeIntervalSince(warmupStart)
+            print("Model warmed up in \(String(format: "%.2f", warmupDuration))s - ready for fast transcription!")
+            
         } catch {
             print("Error loading WhisperKit: \(error)")
         }
