@@ -157,7 +157,7 @@ struct ContentView: View {
         }
         
         // Connect auto-stop when silence is detected
-        whisperManager.bufferManager.onSilenceDetected = { [weak self] in
+        whisperManager.setOnSilenceCallback { [weak self] in
             DispatchQueue.main.async {
                 print("Silence detected - auto-stopping recording")
                 self?.audioRecorder.stopRecording()
