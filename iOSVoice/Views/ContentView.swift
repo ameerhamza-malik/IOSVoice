@@ -127,7 +127,9 @@ struct ContentView: View {
                 .padding(.bottom, 40)
             }
         }
-        .onAppear {
+        .task {
+            // Load model immediately when view appears
+            await whisperManager.setup()
             setupPipeline()
         }
         .onChange(of: audioRecorder.errorMessage) { newValue in
@@ -147,10 +149,6 @@ struct ContentView: View {
     }
     
     private func setupPipeline() {
-        Task {
-            await whisperManager.setup()
-        }
-        
         // Link Audio -> Whisper
         audioRecorder.onAudioBuffer = { buffer in
             whisperManager.processAudio(samples: buffer)
