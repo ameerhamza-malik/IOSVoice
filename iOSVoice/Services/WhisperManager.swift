@@ -95,6 +95,7 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
     }
     
     func didDetectSpeechEnd(segment: [Float]) {
+        print("VAD: Segment Finalized. Adding to Queue. (Size: \(segment.count))")
         // Add to queue and process
         segmentQueue.append(segment)
         processQueue()
@@ -104,11 +105,13 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
         guard !isProcessingQueue, !segmentQueue.isEmpty else { return }
         
         isProcessingQueue = true
+        print("Queue: Starting Processing...")
         
         Task {
             // Drain queue
             while !segmentQueue.isEmpty {
                 let segment = segmentQueue.removeFirst()
+                print("Queue: Processing Segment... (Remaining: \(segmentQueue.count))")
                 
                 // We must lock to ensure we don't overlap with partials or other logic
                 inferenceLock.lock()
@@ -121,6 +124,7 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
                 do {
                     let results = try await pipe.transcribe(audioArray: segment)
                     let text = results.map { $0.text }.joined(separator: " ")
+                    print("Queue: Segment Transcribed: '\(text)'")
                     
                     await MainActor.run {
                          if !text.isEmpty {
@@ -136,6 +140,7 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
             }
             
             isProcessingQueue = false
+            print("Queue: Processing Finished.")
             // Check again in case new items arrived while processing?
             if !segmentQueue.isEmpty {
                 processQueue()
@@ -154,7 +159,7 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
         
         // Chunk size: 100ms at 16kHz = 1600 samples
         let chunkSize = 1600
-        let sleepNanoseconds: UInt64 = 100_000_000 // 100ms
+        let sleepNanoseconds: UInt64 = 10_000_000 // 10ms sleep = ~10x realtime
         
         for chunkStart in stride(from: 0, to: samples.count, by: chunkSize) {
             let chunkEnd = min(chunkStart + chunkSize, samples.count)
@@ -163,11 +168,7 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
             // Feed to buffer manager as if from mic
             bufferManager.process(buffer: chunk)
             
-            // Simulate real-time delay (maybe slightly faster than realtime to be snappy)
-            // try? awaiting Task.sleep(nanoseconds: sleepNanoseconds / 2) 
-            // Actually, let's just let it run as fast as VAD can handle, or throttle if needed.
-            // If we run too fast, VAD might get overwhelmed or queue might explode.
-            // Let's yield to allow UI updates.
+            try? await Task.sleep(nanoseconds: sleepNanoseconds)
             await Task.yield()
         }
         
