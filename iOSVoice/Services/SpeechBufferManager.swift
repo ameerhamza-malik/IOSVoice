@@ -39,6 +39,11 @@ class SpeechBufferManager {
         let isLoud = rms > silenceThreshold
         let chunkDuration = Double(buffer.count) / sampleRate
         
+        // Debug Log (Sampled)
+        if Int.random(in: 0...20) == 0 {
+            print("VAD Process: RMS=\(rms) Threshold=\(silenceThreshold) SpeechActive=\(isSpeechActive)")
+        }
+        
         if isLoud {
             if !isSpeechActive {
                 print("VAD: Speech Started (RMS: \(rms))")

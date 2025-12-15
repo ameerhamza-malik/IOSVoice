@@ -171,8 +171,10 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
             await Task.yield()
         }
         
+        print("Stream Loop Finished. Forcing Flush...")
         // Force process any remaining audio in buffer
         bufferManager.forceFlush()
+        print("Flush Called.")
         
         await MainActor.run {
             self.partialText = "" 
