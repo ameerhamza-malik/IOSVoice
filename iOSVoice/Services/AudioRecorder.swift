@@ -122,6 +122,7 @@ class AudioRecorder: NSObject, ObservableObject {
         if targetFrameCount == 0 { return }
         
         guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: targetFormat, frameCapacity: targetFrameCount) else { return }
+        outputBuffer.frameLength = targetFrameCount // CRITICAL: Set this before conversion
         
         var error: NSError? = nil
         var haveSuppliedData = false
