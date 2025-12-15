@@ -72,6 +72,10 @@ class SpeechBufferManager {
         }
     }
     
+    func forceFlush() {
+        finalizeSegment()
+    }
+    
     private func finalizeSegment() {
         guard isSpeechActive else { return }
         

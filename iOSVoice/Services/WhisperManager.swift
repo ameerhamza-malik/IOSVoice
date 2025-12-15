@@ -171,6 +171,9 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
             await Task.yield()
         }
         
+        // Force process any remaining audio in buffer
+        bufferManager.forceFlush()
+        
         await MainActor.run {
             self.partialText = "" 
         }
