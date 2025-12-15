@@ -163,7 +163,7 @@ struct ContentView: View {
             whisperManager.manualStop() // Trigger transcription of current audio
             audioRecorder.stopRecording()
         } else {
-            whisperManager.resetState()
+            whisperManager.startNewRecording() // Reset and start timestamp tracking
             audioRecorder.startRecording()
         }
     }

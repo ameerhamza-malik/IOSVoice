@@ -21,9 +21,16 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
     
     // Metrics
     var modelLoadTime: TimeInterval = 0
+    private var recordingStartTime: Date?
     
     init() {
         bufferManager.delegate = self
+    }
+    
+    func startNewRecording() {
+        recordingStartTime = Date()
+        currentText = ""
+        partialText = ""
     }
     
     func setup() async {
@@ -111,17 +118,31 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
                 let results = try await pipe.transcribe(audioArray: segment, decodeOptions: options)
                 let text = results.map { $0.text }.joined(separator: " ")
                 
+                // Calculate timestamp from recording start
+                let timestamp: String
+                if let startTime = recordingStartTime {
+                    let elapsed = Date().timeIntervalSince(startTime)
+                    let minutes = Int(elapsed) / 60
+                    let seconds = Int(elapsed) % 60
+                    timestamp = String(format: "%d:%02d", minutes, seconds)
+                } else {
+                    timestamp = "0:00"
+                }
+                
                 // Get detected language if available
                 let detectedLanguage = results.first?.language ?? "unknown"
                 
-                let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
-                print("[\(timestamp)] 🌍 Language: \(detectedLanguage)")
-                print("[\(timestamp)] ✓ Transcribed: '\(text)'")
+                let logTimestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
+                print("[\(logTimestamp)] 🌍 Language: \(detectedLanguage)")
+                print("[\(logTimestamp)] ✓ Transcribed: '\(text)'")
                 
                 
                 await MainActor.run {
                     if !text.isEmpty {
-                        self.currentText += " " + text
+                        // Add new line with timestamp badge
+                        let newLine = "\n[\(timestamp)] \(text)"
+                        self.currentText += newLine
+                    }
                     }
                     self.partialText = ""
                 }
