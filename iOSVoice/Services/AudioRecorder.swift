@@ -26,11 +26,17 @@ class AudioRecorder: NSObject, ObservableObject {
     private func setupSession() {
         let session = AVAudioSession.sharedInstance()
         do {
-            // "default" mode is safer for Simulator and generic use
+            // Simplified for Simulator compatibility - just basic recording
+            #if targetEnvironment(simulator)
+            try session.setCategory(.record)
+            #else
             try session.setCategory(.playAndRecord, mode: .default, options: [.duckOthers, .defaultToSpeaker, .allowBluetooth])
-            try session.setActive(true, options: .notifyOthersOnDeactivation)
+            #endif
+            try session.setActive(true)
+            print("Audio session configured successfully")
         } catch {
             errorMessage = "Failed to setup audio session: \(error.localizedDescription)"
+            print("Audio session error: \(error)")
         }
         
         session.requestRecordPermission { [weak self] allowed in
