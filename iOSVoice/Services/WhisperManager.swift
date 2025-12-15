@@ -54,6 +54,10 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
         partialText = ""
     }
     
+    func setOnSilenceCallback(_ callback: @escaping () -> Void) {
+        bufferManager.onSilenceDetected = callback
+    }
+    
     
     // MARK: - SpeechBufferDelegate
     
