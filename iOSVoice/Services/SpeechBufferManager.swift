@@ -105,12 +105,12 @@ class SpeechBufferManager {
         guard isSpeechActive else { return }
         
         if speechDuration > minSpeechDuration {
-            // Valid Segment - notify that we should stop recording
-            onSilenceDetected?()
+            // Valid Segment - send for transcription, keep listening
+            print("Silence detected - transcribing segment and continuing to listen")
             delegate?.didDetectSpeechEnd(segment: audioBuffer)
         }
         
-        // Reset
+        // Reset buffer for next segment, but stay active
         isSpeechActive = false
         silenceDuration = 0
         speechDuration = 0

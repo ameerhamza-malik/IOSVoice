@@ -154,13 +154,8 @@ struct ContentView: View {
             whisperManager.processAudio(samples: buffer)
         }
         
-        // Connect auto-stop when silence is detected
-        whisperManager.setOnSilenceCallback {
-            DispatchQueue.main.async {
-                print("Silence detected - auto-stopping recording")
-                audioRecorder.stopRecording()
-            }
-        }
+        // Note: We removed auto-stop on silence
+        // Recording stays active, silence just triggers transcription
     }
     
     private func toggleRecording() {
