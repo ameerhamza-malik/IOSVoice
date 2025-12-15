@@ -54,9 +54,6 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
         partialText = ""
     }
     
-    // Queue for sequential processing
-    private var segmentQueue: [[Float]] = []
-    private var isProcessingQueue = false
     
     // MARK: - SpeechBufferDelegate
     
@@ -71,40 +68,21 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
     }
     
     func didUpdatePartialBuffer(buffer: [Float]) {
-        // Only run partials if we are not deep in queue processing to avoid clogging?
-        // Actually, for stream simulation, partials are less critical than final order, but let's keep them.
-        if isProcessingQueue { return } // Skip partials if busy processing final segments to keep up
-        
-        if inferenceLock.try() {
-            Task {
-                defer { inferenceLock.unlock() }
-                guard let pipe = whisperKit else { return }
-                
-                do {
-                    let results = try await pipe.transcribe(audioArray: buffer)
-                    let text = results.map { $0.text }.joined(separator: " ")
-                    
-                    await MainActor.run {
-                        self.partialText = text
-                    }
-                } catch {
-                    print("Partial Error: \(error)")
-                }
-            }
-        }
+        // Skip partials for push-to-talk mode
     }
     
     func didDetectSpeechEnd(segment: [Float]) {
-        print("VAD: Segment Finalized. Size: \(segment.count). Transcribing directly...")
+        print("Speech ended. Transcribing segment (size: \(segment.count))...")
         
-        // Transcribe immediately without queue
         Task {
             guard let pipe = whisperKit else { 
                 print("ERROR: WhisperKit not loaded")
                 return 
             }
             
-            print("Starting transcription for segment...")
+            await MainActor.run {
+                self.partialText = "Transcribing..."
+            }
             
             do {
                 let results = try await pipe.transcribe(audioArray: segment)
@@ -119,58 +97,14 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
                 }
             } catch {
                 print("❌ Transcription Error: \(error)")
+                await MainActor.run {
+                    self.partialText = "Error: \(error.localizedDescription)"
+                }
             }
         }
     }
     
-    private func processQueue() {
-        guard !isProcessingQueue, !segmentQueue.isEmpty else { return }
-        
-        isProcessingQueue = true
-        print("Queue: Starting Processing...")
-        
-        Task {
-            // Drain queue
-            while !segmentQueue.isEmpty {
-                let segment = segmentQueue.removeFirst()
-                print("Queue: Processing Segment... (Remaining: \(segmentQueue.count))")
-                
-                // We must lock to ensure we don't overlap with partials or other logic
-                inferenceLock.lock()
-                
-                guard let pipe = whisperKit else {
-                   inferenceLock.unlock()
-                   break
-                }
-                
-                do {
-                    let results = try await pipe.transcribe(audioArray: segment)
-                    let text = results.map { $0.text }.joined(separator: " ")
-                    print("Queue: Segment Transcribed: '\(text)'")
-                    
-                    await MainActor.run {
-                         if !text.isEmpty {
-                            self.currentText += " " + text
-                        }
-                        self.partialText = "" // Clear partial after final
-                    }
-                } catch {
-                    print("Queue Processing Error: \(error)")
-                }
-                
-                inferenceLock.unlock()
-            }
-            
-            isProcessingQueue = false
-            print("Queue: Processing Finished.")
-            // Check again in case new items arrived while processing?
-            if !segmentQueue.isEmpty {
-                processQueue()
-            }
-        }
-    }
-    
-    // Simulates a live stream by feeding samples in chunks
+    // Simulates a live stream by feeding samples in chunks (for file import)
     func simulateLiveStream(samples: [Float]) async {
         guard let pipe = whisperKit else { return }
         

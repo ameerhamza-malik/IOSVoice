@@ -10,6 +10,7 @@ protocol SpeechBufferDelegate: AnyObject {
 
 class SpeechBufferManager {
     weak var delegate: SpeechBufferDelegate?
+    var onSilenceDetected: (() -> Void)? // Callback when silence detected after speech
     
     // Configuration
     private let sampleRate: Double = 16000.0 // Whisper standard
@@ -85,7 +86,8 @@ class SpeechBufferManager {
         guard isSpeechActive else { return }
         
         if speechDuration > minSpeechDuration {
-            // Valid Segment
+            // Valid Segment - notify that we should stop recording
+            onSilenceDetected?()
             delegate?.didDetectSpeechEnd(segment: audioBuffer)
         }
         
