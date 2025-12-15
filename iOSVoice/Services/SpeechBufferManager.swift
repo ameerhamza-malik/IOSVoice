@@ -16,7 +16,7 @@ class SpeechBufferManager {
     private let sampleRate: Double = 16000.0 // Whisper standard
     private var silenceThreshold: Float = 0.001 // Lowered for sensitivity
     private let minSpeechDuration: Double = 0.5 // Seconds
-    private let maxSilenceDuration: Double = 5.0 // Wait 5s of silence to finalize
+    private let maxSilenceDuration: Double = 3.0 // Wait 5s of silence to finalize
     
     // State
     private var isSpeechActive = false
@@ -85,7 +85,20 @@ class SpeechBufferManager {
     func manualFinalize() {
         // Called when user manually stops recording
         print("Manual stop - finalizing current segment")
-        finalizeSegment()
+        
+        // Send whatever we have in the buffer, even if it doesn't meet VAD criteria
+        if !audioBuffer.isEmpty {
+            print("Sending \(audioBuffer.count) samples for transcription")
+            delegate?.didDetectSpeechEnd(segment: audioBuffer)
+            
+            // Reset state
+            isSpeechActive = false
+            silenceDuration = 0
+            speechDuration = 0
+            audioBuffer.removeAll()
+        } else {
+            print("⚠️ No audio in buffer - nothing to transcribe")
+        }
     }
     
     private func finalizeSegment() {

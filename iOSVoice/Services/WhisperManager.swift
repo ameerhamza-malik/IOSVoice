@@ -103,10 +103,19 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
             }
             
             do {
-                let results = try await pipe.transcribe(audioArray: segment)
+                // Configure for automatic language detection
+                var options = DecodingOptions()
+                options.language = nil // Auto-detect language
+                options.skipSpecialTokens = true
+                
+                let results = try await pipe.transcribe(audioArray: segment, decodeOptions: options)
                 let text = results.map { $0.text }.joined(separator: " ")
                 
+                // Get detected language if available
+                let detectedLanguage = results.first?.language ?? "unknown"
+                
                 let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
+                print("[\(timestamp)] 🌍 Language: \(detectedLanguage)")
                 print("[\(timestamp)] ✓ Transcribed: '\(text)'")
                 
                 
