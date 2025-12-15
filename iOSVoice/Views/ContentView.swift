@@ -165,6 +165,7 @@ struct ContentView: View {
     
     private func toggleRecording() {
         if audioRecorder.isRecording {
+            whisperManager.manualStop() // Trigger transcription of current audio
             audioRecorder.stopRecording()
         } else {
             whisperManager.resetState()

@@ -82,6 +82,12 @@ class SpeechBufferManager {
         finalizeSegment()
     }
     
+    func manualFinalize() {
+        // Called when user manually stops recording
+        print("Manual stop - finalizing current segment")
+        finalizeSegment()
+    }
+    
     private func finalizeSegment() {
         guard isSpeechActive else { return }
         

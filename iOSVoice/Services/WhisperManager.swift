@@ -67,6 +67,11 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
         bufferManager.onSilenceDetected = callback
     }
     
+    func manualStop() {
+        // Force transcription of whatever was recorded
+        bufferManager.manualFinalize()
+    }
+    
     
     // MARK: - SpeechBufferDelegate
     
