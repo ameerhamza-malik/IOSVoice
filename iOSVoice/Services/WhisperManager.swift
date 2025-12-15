@@ -17,7 +17,7 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
     private let inferenceLock = NSLock()
     
     // User requested specific optimized model (~626MB)
-    let modelName = "openai_whisper-large-v3-v20240930_626MB"
+    let modelName = "openai_whisper-medium"
     
     // Metrics
     var modelLoadTime: TimeInterval = 0
