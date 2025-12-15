@@ -17,7 +17,10 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
     private let inferenceLock = NSLock()
     
     // User requested specific optimized model (~626MB)
-    let modelName = "openai_whisper-large-v3-v20240930_626MB" 
+    let modelName = "openai_whisper-large-v3-v20240930_626MB"
+    
+    // Metrics
+    var modelLoadTime: TimeInterval = 0
     
     init() {
         bufferManager.delegate = self
@@ -26,11 +29,15 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
     func setup() async {
         do {
             print("Initializing WhisperKit...")
-			let pipe = try await WhisperKit(model: modelName)
+            let startLoad = Date()
+            let pipe = try await WhisperKit(model: modelName)
+            let duration = Date().timeIntervalSince(startLoad)
+            
             await MainActor.run {
                 self.whisperKit = pipe
                 self.isModelLoaded = true
-                print("WhisperKit loaded!")
+                self.modelLoadTime = duration
+                print("WhisperKit loaded in \(String(format: "%.2f", duration))s")
             }
         } catch {
             print("Error loading WhisperKit: \(error)")
@@ -120,8 +127,12 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
             let timeTaken = Date().timeIntervalSince(startTime)
             let text = results.map { $0.text }.joined(separator: " ")
             
-            let finalOutput = "\(text)\n\n[Time: \(String(format: "%.2f", timeTaken))s]"
-            print("Transcription Time: \(timeTaken)s")
+            let totalTime = timeTaken // Just inference
+            let loadTimeStr = String(format: "%.2f", self.modelLoadTime)
+            let inferTimeStr = String(format: "%.2f", totalTime)
+            
+            let finalOutput = "\(text)\n\n[Inference: \(inferTimeStr)s, Model Load: \(loadTimeStr)s]"
+            print("Time - Inference: \(inferTimeStr)s, Load: \(loadTimeStr)s")
             
             await MainActor.run {
                 self.currentText = finalOutput
