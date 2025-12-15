@@ -91,7 +91,10 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
             do {
                 let results = try await pipe.transcribe(audioArray: segment)
                 let text = results.map { $0.text }.joined(separator: " ")
-                print("✓ Transcribed: '\(text)'")
+                
+                let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
+                print("[\(timestamp)] ✓ Transcribed: '\(text)'")
+                
                 
                 await MainActor.run {
                     if !text.isEmpty {

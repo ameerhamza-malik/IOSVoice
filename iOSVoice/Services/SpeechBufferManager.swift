@@ -16,7 +16,7 @@ class SpeechBufferManager {
     private let sampleRate: Double = 16000.0 // Whisper standard
     private var silenceThreshold: Float = 0.001 // Lowered for sensitivity
     private let minSpeechDuration: Double = 0.5 // Seconds
-    private let maxSilenceDuration: Double = 0.8 // Wait 800ms of silence to finalize
+    private let maxSilenceDuration: Double = 5.0 // Wait 5s of silence to finalize
     
     // State
     private var isSpeechActive = false
