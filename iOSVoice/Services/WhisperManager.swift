@@ -143,7 +143,6 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
                         let newLine = "\n[\(timestamp)] \(text)"
                         self.currentText += newLine
                     }
-                    }
                     self.partialText = ""
                 }
             } catch {
