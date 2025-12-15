@@ -95,10 +95,32 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
     }
     
     func didDetectSpeechEnd(segment: [Float]) {
-        print("VAD: Segment Finalized. Adding to Queue. (Size: \(segment.count))")
-        // Add to queue and process
-        segmentQueue.append(segment)
-        processQueue()
+        print("VAD: Segment Finalized. Size: \(segment.count). Transcribing directly...")
+        
+        // Transcribe immediately without queue
+        Task {
+            guard let pipe = whisperKit else { 
+                print("ERROR: WhisperKit not loaded")
+                return 
+            }
+            
+            print("Starting transcription for segment...")
+            
+            do {
+                let results = try await pipe.transcribe(audioArray: segment)
+                let text = results.map { $0.text }.joined(separator: " ")
+                print("✓ Transcribed: '\(text)'")
+                
+                await MainActor.run {
+                    if !text.isEmpty {
+                        self.currentText += " " + text
+                    }
+                    self.partialText = ""
+                }
+            } catch {
+                print("❌ Transcription Error: \(error)")
+            }
+        }
     }
     
     private func processQueue() {
