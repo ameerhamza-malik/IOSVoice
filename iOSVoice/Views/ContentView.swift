@@ -183,7 +183,8 @@ struct ContentView: View {
         Task {
             do {
                 let samples = try await audioFileService.loadAudio(url: url)
-                await whisperManager.transcribeFile(samples: samples)
+                // Use simulated live stream instead of one-shot
+                await whisperManager.simulateLiveStream(samples: samples)
             } catch {
                 print("File Processing Error: \(error)")
             }

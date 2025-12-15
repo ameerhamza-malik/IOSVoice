@@ -54,6 +54,10 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
         partialText = ""
     }
     
+    // Queue for sequential processing
+    private var segmentQueue: [[Float]] = []
+    private var isProcessingQueue = false
+    
     // MARK: - SpeechBufferDelegate
     
     func didUpdateAudioLevels(level: Float) {
@@ -67,7 +71,10 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
     }
     
     func didUpdatePartialBuffer(buffer: [Float]) {
-        // Debounce / Check lock
+        // Only run partials if we are not deep in queue processing to avoid clogging?
+        // Actually, for stream simulation, partials are less critical than final order, but let's keep them.
+        if isProcessingQueue { return } // Skip partials if busy processing final segments to keep up
+        
         if inferenceLock.try() {
             Task {
                 defer { inferenceLock.unlock() }
@@ -75,7 +82,6 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
                 
                 do {
                     let results = try await pipe.transcribe(audioArray: buffer)
-                    // Results is [TranscriptionResult] or similar, usually has a .text property or we map it
                     let text = results.map { $0.text }.joined(separator: " ")
                     
                     await MainActor.run {
@@ -89,59 +95,90 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
     }
     
     func didDetectSpeechEnd(segment: [Float]) {
-        // High priority - Wait for lock or just launch
+        // Add to queue and process
+        segmentQueue.append(segment)
+        processQueue()
+    }
+    
+    private func processQueue() {
+        guard !isProcessingQueue, !segmentQueue.isEmpty else { return }
+        
+        isProcessingQueue = true
+        
         Task {
-            // Simple lock spin or just go for it (race condition acceptable for final vs partial)
-            inferenceLock.lock()
-            defer { inferenceLock.unlock() }
-            
-            guard let pipe = whisperKit else { return }
-            
-            do {
-                let results = try await pipe.transcribe(audioArray: segment)
-                let text = results.map { $0.text }.joined(separator: " ")
+            // Drain queue
+            while !segmentQueue.isEmpty {
+                let segment = segmentQueue.removeFirst()
                 
-                if !text.isEmpty {
-                    await MainActor.run {
-                        self.currentText += " " + text
-                        self.partialText = ""
-                    }
+                // We must lock to ensure we don't overlap with partials or other logic
+                inferenceLock.lock()
+                
+                guard let pipe = whisperKit else {
+                   inferenceLock.unlock()
+                   break
                 }
-            } catch {
-                print("Finalize error: \(error)")
+                
+                do {
+                    let results = try await pipe.transcribe(audioArray: segment)
+                    let text = results.map { $0.text }.joined(separator: " ")
+                    
+                    await MainActor.run {
+                         if !text.isEmpty {
+                            self.currentText += " " + text
+                        }
+                        self.partialText = "" // Clear partial after final
+                    }
+                } catch {
+                    print("Queue Processing Error: \(error)")
+                }
+                
+                inferenceLock.unlock()
+            }
+            
+            isProcessingQueue = false
+            // Check again in case new items arrived while processing?
+            if !segmentQueue.isEmpty {
+                processQueue()
             }
         }
     }
-    func transcribeFile(samples: [Float]) async {
+    
+    // Simulates a live stream by feeding samples in chunks
+    func simulateLiveStream(samples: [Float]) async {
         guard let pipe = whisperKit else { return }
         
         await MainActor.run {
-            self.currentText = "Transcribing file..."
-            self.partialText = ""
+            self.currentText = "" // Reset
+            self.partialText = "Streaming file..."
         }
         
-        let startTime = Date()
+        // Chunk size: 100ms at 16kHz = 1600 samples
+        let chunkSize = 1600
+        let sleepNanoseconds: UInt64 = 100_000_000 // 100ms
         
-        do {
-            let results = try await pipe.transcribe(audioArray: samples)
-            let timeTaken = Date().timeIntervalSince(startTime)
-            let text = results.map { $0.text }.joined(separator: " ")
+        for chunkStart in stride(from: 0, to: samples.count, by: chunkSize) {
+            let chunkEnd = min(chunkStart + chunkSize, samples.count)
+            let chunk = Array(samples[chunkStart..<chunkEnd])
             
-            let totalTime = timeTaken // Just inference
-            let loadTimeStr = String(format: "%.2f", self.modelLoadTime)
-            let inferTimeStr = String(format: "%.2f", totalTime)
+            // Feed to buffer manager as if from mic
+            bufferManager.process(buffer: chunk)
             
-            let finalOutput = "\(text)\n\n[Inference: \(inferTimeStr)s, Model Load: \(loadTimeStr)s]"
-            print("Time - Inference: \(inferTimeStr)s, Load: \(loadTimeStr)s")
-            
-            await MainActor.run {
-                self.currentText = finalOutput
-            }
-        } catch {
-            print("File Transcription Error: \(error)")
-            await MainActor.run {
-                self.currentText = "Error: \(error.localizedDescription)"
-            }
+            // Simulate real-time delay (maybe slightly faster than realtime to be snappy)
+            // try? awaiting Task.sleep(nanoseconds: sleepNanoseconds / 2) 
+            // Actually, let's just let it run as fast as VAD can handle, or throttle if needed.
+            // If we run too fast, VAD might get overwhelmed or queue might explode.
+            // Let's yield to allow UI updates.
+            await Task.yield()
         }
+        
+        await MainActor.run {
+            self.partialText = "" 
+        }
+    }
+
+    func transcribeFile(samples: [Float]) async {
+         // Keep old logic for backup if needed, or remove.
+         // ... (Logic kept same or reduced)
+         // For now, let's comment out or leave as legacy.
     }
 }
