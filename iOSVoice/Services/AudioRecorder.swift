@@ -103,13 +103,23 @@ class AudioRecorder: NSObject, ObservableObject {
     
     private func processBuffer(_ buffer: AVAudioPCMBuffer) {
         guard let channelData = buffer.floatChannelData?[0] else { return }
-        let channelDataValue = Array(UnsafeBufferPointer(start: channelData, count: Int(buffer.frameLength)))
+        let frameLength = Int(buffer.frameLength)
+        let inputSampleRate = buffer.format.sampleRate
+        
+        var samples = Array(UnsafeBufferPointer(start: channelData, count: frameLength))
+        
+        // Resample to 16kHz if needed (Whisper requirement)
+        let targetSampleRate: Double = 16000.0
+        if inputSampleRate != targetSampleRate {
+            samples = resample(samples: samples, from: inputSampleRate, to: targetSampleRate)
+            print("Resampled: \(inputSampleRate)Hz -> \(targetSampleRate)Hz, samples: \(samples.count)")
+        }
         
         // Calculate RMS for debug display
         var rms: Float = 0.0
-        if !channelDataValue.isEmpty {
-            let sum = channelDataValue.reduce(0) { $0 + $1 * $1 }
-            rms = sqrt(sum / Float(channelDataValue.count))
+        if !samples.isEmpty {
+            let sum = samples.reduce(0) { $0 + $1 * $1 }
+            rms = sqrt(sum / Float(samples.count))
             if rms.isNaN { rms = 0.0 }
             
             DispatchQueue.main.async {
@@ -117,8 +127,28 @@ class AudioRecorder: NSObject, ObservableObject {
             }
         }
         
-        // WhisperKit can handle sample rate conversion internally if needed
-        // Send raw audio data
-        onAudioBuffer?(channelDataValue)
+        onAudioBuffer?(samples)
+    }
+    
+    private func resample(samples: [Float], from inputRate: Double, to outputRate: Double) -> [Float] {
+        guard inputRate != outputRate else { return samples }
+        
+        let ratio = outputRate / inputRate
+        let outputLength = Int(Double(samples.count) * ratio)
+        var output = [Float](repeating: 0, count: outputLength)
+        
+        // Simple linear interpolation resampling
+        for i in 0..<outputLength {
+            let inputIndex = Double(i) / ratio
+            let index0 = Int(floor(inputIndex))
+            let index1 = min(index0 + 1, samples.count - 1)
+            let fraction = Float(inputIndex - Double(index0))
+            
+            if index0 < samples.count {
+                output[i] = samples[index0] * (1.0 - fraction) + samples[index1] * fraction
+            }
+        }
+        
+        return output
     }
 }
