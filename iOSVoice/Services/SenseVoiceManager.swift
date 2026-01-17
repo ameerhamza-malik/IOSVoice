@@ -1,10 +1,9 @@
 import Foundation
 import AVFoundation
 import Combine
+import SentencePiece
 
-// ONNX Runtime types are available via Objective-C bridging - no import needed
-// TODO: Add SentencePiece dependency to your Xcode project
-// import SentencePiece 
+// ONNX Runtime types are available via Objective-C bridging - no import needed 
 
 class SenseVoiceManager: ObservableObject, SpeechBufferDelegate {
     
@@ -16,8 +15,7 @@ class SenseVoiceManager: ObservableObject, SpeechBufferDelegate {
     private var session: ORTSession?
     private var env: ORTEnv?
     
-    // Placeholder for Tokenizer
-    // private var tokenizer: SentencePieceProcessor?
+    private var tokenizer: SentencePieceProcessor?
     
     private let audioProcessor = AudioProcessor()
     private var bufferManager = SpeechBufferManager()
@@ -55,8 +53,12 @@ class SenseVoiceManager: ObservableObject, SpeechBufferDelegate {
             // Load Tokenizer
             if let tokPath = tokenizerPath {
                 // tokenizer = try SentencePieceProcessor(modelPath: tokPath)
-                print("Tokenizer found at \(tokPath) (Not initialized - SentencePiece dependency missing)")
-            } else {
+                do {
+                    tokenizer = try SentencePieceProcessor(modelPath: tokPath)
+                    print("Tokenizer initialized successfully")
+                } catch {
+                    print("Failed to load tokenizer: \(error)")
+                }
                 print("SenseVoice: Tokenizer model not found in Bundle.")
             }
             
@@ -205,18 +207,17 @@ class SenseVoiceManager: ObservableObject, SpeechBufferDelegate {
                 
                 // Decode Int IDs
                 let ids = ctcGreedyDecode(logits: floatArray, timeSteps: outTimeLength, vocabSize: inferredVocabSize)
-                
-                print("SenseVoice Decoded IDs: \(ids)")
-                
-                // Convert IDs to String using Tokenizer
-                /*
                 if let decodedText = tokenizer?.decode(ids: ids) {
                     print("Decoded Text: \(decodedText)")
-                     await MainActor.run {
+                    await MainActor.run {
                         self.currentText += decodedText + " "
                     }
-                }
-                */
+                } else {
+                    // Fallback if tokenizer not available
+                    let mockOutput = "[Text ID sequence: \(ids.prefix(5))...]" 
+                    await MainActor.run {
+                        self.currentText += mockOutput + " "
+                    }
                  // Temporary Mock
                 let mockOutput = "[Text ID sequence: \(ids.prefix(5))...]" 
                 await MainActor.run {
