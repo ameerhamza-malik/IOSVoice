@@ -4,6 +4,8 @@ import UniformTypeIdentifiers
 struct ContentView: View {
     @StateObject private var audioRecorder = AudioRecorder()
     @StateObject private var whisperManager = WhisperManager()
+    @StateObject private var senseVoiceManager = SenseVoiceManager()
+    @State private var useSenseVoice = false
     
     // File Import State
     @State private var showFileImporter = false
@@ -16,23 +18,35 @@ struct ContentView: View {
             
             VStack(spacing: 24) {
                 // Header
-                Text("Whisper Live")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .padding(.top, 40)
+                VStack {
+                    Text("Live Transcription")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                    
+                    Picker("Engine", selection: $useSenseVoice) {
+                        Text("Whisper").tag(false)
+                        Text("SenseVoice").tag(true)
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                    .padding(.horizontal)
+                    .onChange(of: useSenseVoice) { _ in
+                        setupPipeline()
+                    }
+                }
+                .padding(.top, 40)
                 
                 // Content
                 ScrollView {
                     VStack(alignment: .leading, spacing: 5) {
                         // Committed / Final Text
-                        Text(whisperManager.currentText)
+                        Text(useSenseVoice ? senseVoiceManager.currentText : whisperManager.currentText)
                             .font(.system(size: 18, weight: .medium))
                             .foregroundColor(.primary)
                             .multilineTextAlignment(.leading)
                         
                         // Partial / In-Progress Text
-                        if !whisperManager.partialText.isEmpty {
-                            Text(whisperManager.partialText)
+                        if !(useSenseVoice ? senseVoiceManager.partialText : whisperManager.partialText).isEmpty {
+                            Text(useSenseVoice ? senseVoiceManager.partialText : whisperManager.partialText)
                                 .font(.system(size: 18, weight: .medium))
                                 .foregroundColor(.secondary)
                                 .italic()
@@ -60,9 +74,9 @@ struct ContentView: View {
 
                 // Status & Visualizer
                 VStack(spacing: 20) {
-                    if whisperManager.isModelLoaded {
+                    if (useSenseVoice ? senseVoiceManager.isModelLoaded : whisperManager.isModelLoaded) {
                         if audioRecorder.isRecording {
-                            AudioVisualizerView(level: whisperManager.audioLevel)
+                            AudioVisualizerView(level: useSenseVoice ? senseVoiceManager.audioLevel : whisperManager.audioLevel)
                                 .frame(height: 50)
                             
                             Text("Listening...")
@@ -76,7 +90,7 @@ struct ContentView: View {
                                 .foregroundColor(.gray)
                         }
                     } else {
-                        ProgressView("Loading Optimized Model...")
+                        ProgressView(useSenseVoice ? "Loading SenseVoice..." : "Loading Optimized Model...")
                     }
                     
                     // Controls
@@ -99,7 +113,7 @@ struct ContentView: View {
                                     .foregroundColor(.primary)
                             }
                         }
-                        .disabled(!whisperManager.isModelLoaded || audioRecorder.isRecording || isProcessingFile)
+                        .disabled(!(useSenseVoice ? senseVoiceManager.isModelLoaded : whisperManager.isModelLoaded) || audioRecorder.isRecording || isProcessingFile)
                         
                         // Mic Button
                         Button(action: {
@@ -121,7 +135,7 @@ struct ContentView: View {
                                     .foregroundColor(.primary)
                             }
                         }
-                        .disabled(!whisperManager.isModelLoaded || isProcessingFile)
+                        .disabled(!(useSenseVoice ? senseVoiceManager.isModelLoaded : whisperManager.isModelLoaded) || isProcessingFile)
                     }
                 }
                 .padding(.bottom, 40)
@@ -149,21 +163,32 @@ struct ContentView: View {
     }
     
     private func setupPipeline() {
-        // Link Audio -> Whisper
+        // Link Audio -> Active Manager
         audioRecorder.onAudioBuffer = { buffer in
-            whisperManager.processAudio(samples: buffer)
+            if useSenseVoice {
+                senseVoiceManager.processAudio(samples: buffer)
+            } else {
+                whisperManager.processAudio(samples: buffer)
+            }
         }
-        
-        // Note: We removed auto-stop on silence
-        // Recording stays active, silence just triggers transcription
     }
     
     private func toggleRecording() {
+        let manager: AnyObject = useSenseVoice ? senseVoiceManager : whisperManager
+        
         if audioRecorder.isRecording {
-            whisperManager.manualStop() // Trigger transcription of current audio
+            if useSenseVoice {
+                senseVoiceManager.manualStop()
+            } else {
+                whisperManager.manualStop()
+            }
             audioRecorder.stopRecording()
         } else {
-            whisperManager.startNewRecording() // Reset and start timestamp tracking
+            if useSenseVoice {
+                senseVoiceManager.startNewRecording()
+            } else {
+                whisperManager.startNewRecording()
+            }
             audioRecorder.startRecording()
         }
     }
