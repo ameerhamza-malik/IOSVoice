@@ -1,6 +1,6 @@
 import Foundation
 import AVFoundation
-import onnxruntime_objc
+import onnxruntime
 
 // TODO: Add SentencePiece dependency to your Xcode project
 // import SentencePiece 
