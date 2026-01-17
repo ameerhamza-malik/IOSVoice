@@ -168,8 +168,12 @@ class SenseVoiceManager: ObservableObject, SpeechBufferDelegate {
             
             // 3. Inference
             let outputs = try session.run(
-                withInputNames: ["speech", "speech_lengths", "language", "textnorm"],
-                inputValues: [speechTensor, speechLengthsTensor, languageTensor, textNormTensor],
+                withInputs: [
+                    "speech": speechTensor,
+                    "speech_lengths": speechLengthsTensor,
+                    "language": languageTensor,
+                    "textnorm": textNormTensor
+                ],
                 outputNames: ["ctc_logits", "encoder_out_lens"],
                 runOptions: nil
             )
