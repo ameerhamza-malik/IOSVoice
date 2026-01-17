@@ -1,7 +1,7 @@
 import Foundation
 import AVFoundation
 import Combine
-import SentencePiece
+import Sentencepiece
 
 // ONNX Runtime types are available via Objective-C bridging - no import needed 
 
@@ -15,7 +15,7 @@ class SenseVoiceManager: ObservableObject, SpeechBufferDelegate {
     private var session: ORTSession?
     private var env: ORTEnv?
     
-    private var tokenizer: SentencePieceProcessor?
+    private var tokenizer: SentencepieceTokenizer?
     
     private let audioProcessor = AudioProcessor()
     private var bufferManager = SpeechBufferManager()
@@ -54,7 +54,7 @@ class SenseVoiceManager: ObservableObject, SpeechBufferDelegate {
             if let tokPath = tokenizerPath {
                 // tokenizer = try SentencePieceProcessor(modelPath: tokPath)
                 do {
-                    tokenizer = try SentencePieceProcessor(modelPath: tokPath)
+                    tokenizer = try SentencepieceTokenizer(modelPath: tokPath)
                     print("Tokenizer initialized successfully")
                 } catch {
                     print("Failed to load tokenizer: \(error)")
