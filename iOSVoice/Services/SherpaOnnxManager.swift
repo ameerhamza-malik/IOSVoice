@@ -52,94 +52,69 @@ class SherpaOnnxManager: ObservableObject {
         let modelDir = "sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17"
         guard let modelPath = Bundle.main.path(forResource: "model.int8", ofType: "onnx", inDirectory: modelDir),
               let tokensPath = Bundle.main.path(forResource: "tokens", ofType: "txt", inDirectory: modelDir) else {
-            print("❌ Model files not found")
+            print("❌ Model files not found in bundle: \(modelDir)")
             return
         }
         
-        // Create SenseVoice config using C API
-        var senseVoiceConfig = SherpaOnnxOfflineSenseVoiceModelConfig(
-            model: strdup(modelPath),
-            language: strdup("auto"),
-            use_itn: 1  // Enable Inverse Text Normalization (punctuation)
-        )
+        print("✓ Model path: \(modelPath)")
+        print("✓ Tokens path: \(tokensPath)")
         
-        var modelConfig = SherpaOnnxOfflineModelConfig(
-            transducer: SherpaOnnxOfflineTransducerModelConfig(encoder: nil, decoder: nil, joiner: nil),
-            paraformer: SherpaOnnxOfflineParaformerModelConfig(model: nil),
-            nemo_ctc: SherpaOnnxOfflineNemoEncDecCtcModelConfig(model: nil),
-            whisper: SherpaOnnxOfflineWhisperModelConfig(encoder: nil, decoder: nil, language: nil, task: nil, tail_paddings: 0),
-            tdnn: SherpaOnnxOfflineTdnnModelConfig(model: nil),
-            tokens: strdup(tokensPath),
-            num_threads: 2,
-            debug: 0,
-            provider: strdup("cpu"),
-            model_type: strdup(""),
-            modeling_unit: strdup("cjkchar"),
-            bpe_vocab: nil,
-            telespeech_ctc: nil,
-            sense_voice: senseVoiceConfig,
-            moonshine: SherpaOnnxOfflineMoonshineModelConfig(preprocessor: nil, encoder: nil, uncached_decoder: nil, cached_decoder: nil),
-            fire_red_asr: SherpaOnnxOfflineFireRedAsrModelConfig(encoder: nil, decoder: nil),
-            dolphin: SherpaOnnxOfflineDolphinModelConfig(model: nil),
-            zipformer_ctc: SherpaOnnxOfflineZipformerCtcModelConfig(model: nil),
-            canary: SherpaOnnxOfflineCanaryModelConfig(encoder: nil, decoder: nil, src_lang: nil, tgt_lang: nil, use_pnc: 0),
-            wenet_ctc: SherpaOnnxOfflineWenetCtcModelConfig(model: nil),
-            omnilingual: SherpaOnnxOfflineOmnilingualAsrCtcModelConfig(model: nil),
-            medasr: SherpaOnnxOfflineMedAsrCtcModelConfig(model: nil),
-            funasr_nano: SherpaOnnxOfflineFunASRNanoModelConfig(
-                encoder_adaptor: nil, llm: nil, embedding: nil, tokenizer: nil,
-                system_prompt: nil, user_prompt: nil, max_new_tokens: 0, temperature: 0, top_p: 0, seed: 0
-            )
-        )
+        // Use helper function to create config with all required C structs
+        modelPath.withCString { modelCStr in
+            tokensPath.withCString { tokensCStr in
+                "auto".withCString { langCStr in
+                    "cpu".withCString { providerCStr in
+                        "greedy_search".withCString { methodCStr in
+                            "cjkchar".withCString { unitCStr in
+                                var config = createOfflineConfig(
+                                    modelPath: modelCStr,
+                                    tokensPath: tokensCStr,
+                                    language: langCStr,
+                                    provider: providerCStr,
+                                    decodingMethod: methodCStr,
+                                    modelingUnit: unitCStr,
+                                    sampleRate: Int32(sampleRate)
+                                )
+                                
+                                // Create recognizer
+                                recognizer = SherpaOnnxCreateOfflineRecognizer(&config)
+                            }
+                        }
+                    }
+                }
+            }
+        }
         
-        var featConfig = SherpaOnnxFeatureConfig(
-            sample_rate: Int32(sampleRate),
-            feature_dim: 80
-        )
-        
-        var lmConfig = SherpaOnnxOfflineLMConfig(model: nil, scale: 0.0)
-        
-        var config = SherpaOnnxOfflineRecognizerConfig(
-            feat_config: featConfig,
-            model_config: modelConfig,
-            lm_config: lmConfig,
-            decoding_method: strdup("greedy_search"),
-            max_active_paths: 4,
-            hotwords_file: nil,
-            hotwords_score: 1.5,
-            rule_fsts: nil,
-            rule_fars: nil,
-            blank_penalty: 0.0,
-            hr: SherpaOnnxHomophoneReplacerConfig(dict_dir: nil, lexicon: nil, rule_fsts: nil)
-        )
-        
-        // Create recognizer
-        recognizer = SherpaOnnxCreateOfflineRecognizer(&config)
-        
-        // Setup VAD (optional but recommended)
+        // Setup VAD (optional - only if model exists)
         if let vadModelPath = Bundle.main.path(forResource: "silero_vad", ofType: "onnx") {
-            var vadModelConfig = SherpaOnnxSileroVadModelConfig(
-                model: strdup(vadModelPath),
-                threshold: 0.5,
-                min_silence_duration: 0.5,
-                min_speech_duration: 0.25,
-                window_size: 512,
-                max_speech_duration: 5.0
-            )
-            
-            var vadConfig = SherpaOnnxVadModelConfig(
-                silero_vad: vadModelConfig,
-                sample_rate: Int32(sampleRate),
-                num_threads: 1,
-                provider: strdup("cpu"),
-                debug: 0,
-                ten_vad: SherpaOnnxTenVadModelConfig(
-                    model: nil, threshold: 0, min_silence_duration: 0,
-                    min_speech_duration: 0, window_size: 0, max_speech_duration: 0
-                )
-            )
-            
-            vad = SherpaOnnxCreateVoiceActivityDetector(&vadConfig, 30.0)
+            vadModelPath.withCString { vadCStr in
+                "cpu".withCString { providerCStr in
+                    var vadModelConfig = SherpaOnnxSileroVadModelConfig(
+                        model: vadCStr,
+                        threshold: 0.5,
+                        min_silence_duration: 0.5,
+                        min_speech_duration: 0.25,
+                        window_size: 512,
+                        max_speech_duration: 5.0
+                    )
+                    
+                    var tenVad = SherpaOnnxTenVadModelConfig(
+                        model: nil, threshold: 0, min_silence_duration: 0,
+                        min_speech_duration: 0, window_size: 0, max_speech_duration: 0
+                    )
+                    
+                    var vadConfig = SherpaOnnxVadModelConfig(
+                        silero_vad: vadModelConfig,
+                        sample_rate: Int32(sampleRate),
+                        num_threads: 1,
+                        provider: providerCStr,
+                        debug: 0,
+                        ten_vad: tenVad
+                    )
+                    
+                    vad = SherpaOnnxCreateVoiceActivityDetector(&vadConfig, 30.0)
+                }
+            }
         }
         
         let success = (recognizer != nil)
@@ -253,8 +228,96 @@ class SherpaOnnxManager: ObservableObject {
     }
 }
 
-// Helper to duplicate C strings (must be freed later)
-private func strdup(_ string: String?) -> UnsafePointer<Int8>? {
-    guard let string = string else { return nil }
-    return (string as NSString).utf8String
+// Helper function to create config with proper C struct initialization
+private func createOfflineConfig(
+    modelPath: UnsafePointer<Int8>,
+    tokensPath: UnsafePointer<Int8>,
+    language: UnsafePointer<Int8>,
+    provider: UnsafePointer<Int8>,
+    decodingMethod: UnsafePointer<Int8>,
+    modelingUnit: UnsafePointer<Int8>,
+    sampleRate: Int32
+) -> SherpaOnnxOfflineRecognizerConfig {
+    
+    // Create empty model configs
+    var transducer = SherpaOnnxOfflineTransducerModelConfig(encoder: nil, decoder: nil, joiner: nil)
+    var paraformer = SherpaOnnxOfflineParaformerModelConfig(model: nil)
+    var nemoCtc = SherpaOnnxOfflineNemoEncDecCtcModelConfig(model: nil)
+    var whisper = SherpaOnnxOfflineWhisperModelConfig(encoder: nil, decoder: nil, language: nil, task: nil, tail_paddings: 0)
+    var tdnn = SherpaOnnxOfflineTdnnModelConfig(model: nil)
+    
+    // SenseVoice config (the one we're using)
+    var senseVoice = SherpaOnnxOfflineSenseVoiceModelConfig(
+        model: modelPath,
+        language: language,
+        use_itn: 1
+    )
+    
+    // Empty model configs for other models
+    var moonshine = SherpaOnnxOfflineMoonshineModelConfig(preprocessor: nil, encoder: nil, uncached_decoder: nil, cached_decoder: nil)
+    var fireRedAsr = SherpaOnnxOfflineFireRedAsrModelConfig(encoder: nil, decoder: nil)
+    var dolphin = SherpaOnnxOfflineDolphinModelConfig(model: nil)
+    var zipformerCtc = SherpaOnnxOfflineZipformerCtcModelConfig(model: nil)
+    var canary = SherpaOnnxOfflineCanaryModelConfig(encoder: nil, decoder: nil, src_lang: nil, tgt_lang: nil, use_pnc: 0)
+    var wenetCtc = SherpaOnnxOfflineWenetCtcModelConfig(model: nil)
+    var omnilingual = SherpaOnnxOfflineOmnilingualAsrCtcModelConfig(model: nil)
+    var medasr = SherpaOnnxOfflineMedAsrCtcModelConfig(model: nil)
+    var funasrNano = SherpaOnnxOfflineFunASRNanoModelConfig(
+        encoder_adaptor: nil, llm: nil, embedding: nil, tokenizer: nil,
+        system_prompt: nil, user_prompt: nil, max_new_tokens: 0, temperature: 0, top_p: 0, seed: 0
+    )
+    
+    // Model config
+    var modelConfig = SherpaOnnxOfflineModelConfig(
+        transducer: transducer,
+        paraformer: paraformer,
+        nemo_ctc: nemoCtc,
+        whisper: whisper,
+        tdnn: tdnn,
+        tokens: tokensPath,
+        num_threads: 2,
+        debug: 0,
+        provider: provider,
+        model_type: nil,
+        modeling_unit: modelingUnit,
+        bpe_vocab: nil,
+        telespeech_ctc: nil,
+        sense_voice: senseVoice,
+        moonshine: moonshine,
+        fire_red_asr: fireRedAsr,
+        dolphin: dolphin,
+        zipformer_ctc: zipformerCtc,
+        canary: canary,
+        wenet_ctc: wenetCtc,
+        omnilingual: omnilingual,
+        medasr: medasr,
+        funasr_nano: funasrNano
+    )
+    
+    // Feature config
+    var featConfig = SherpaOnnxFeatureConfig(
+        sample_rate: sampleRate,
+        feature_dim: 80
+    )
+    
+    // LM config (not used for SenseVoice)
+    var lmConfig = SherpaOnnxOfflineLMConfig(model: nil, scale: 0.0)
+    
+    // Homophone replacer (not used)
+    var hr = SherpaOnnxHomophoneReplacerConfig(dict_dir: nil, lexicon: nil, rule_fsts: nil)
+    
+    // Final recognizer config
+    return SherpaOnnxOfflineRecognizerConfig(
+        feat_config: featConfig,
+        model_config: modelConfig,
+        lm_config: lmConfig,
+        decoding_method: decodingMethod,
+        max_active_paths: 4,
+        hotwords_file: nil,
+        hotwords_score: 1.5,
+        rule_fsts: nil,
+        rule_fars: nil,
+        blank_penalty: 0.0,
+        hr: hr
+    )
 }
