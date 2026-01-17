@@ -39,14 +39,14 @@ struct ContentView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 5) {
                         // Committed / Final Text
-                        Text(useSenseVoice ? senseVoiceManager.currentText : whisperManager.currentText)
+                        Text(useSenseVoice ? sherpaManager.currentText : whisperManager.currentText)
                             .font(.system(size: 18, weight: .medium))
                             .foregroundColor(.primary)
                             .multilineTextAlignment(.leading)
                         
                         // Partial / In-Progress Text
-                        if !(useSenseVoice ? senseVoiceManager.partialText : whisperManager.partialText).isEmpty {
-                            Text(useSenseVoice ? senseVoiceManager.partialText : whisperManager.partialText)
+                        if !(useSenseVoice ? sherpaManager.partialText : whisperManager.partialText).isEmpty {
+                            Text(useSenseVoice ? sherpaManager.partialText : whisperManager.partialText)
                                 .font(.system(size: 18, weight: .medium))
                                 .foregroundColor(.secondary)
                                 .italic()
@@ -74,9 +74,9 @@ struct ContentView: View {
 
                 // Status & Visualizer
                 VStack(spacing: 20) {
-                    if (useSenseVoice ? senseVoiceManager.isModelLoaded : whisperManager.isModelLoaded) {
+                    if (useSenseVoice ? sherpaManager.isModelLoaded : whisperManager.isModelLoaded) {
                         if audioRecorder.isRecording {
-                            AudioVisualizerView(level: useSenseVoice ? senseVoiceManager.audioLevel : whisperManager.audioLevel)
+                            AudioVisualizerView(level: useSenseVoice ? sherpaManager.audioLevel : whisperManager.audioLevel)
                                 .frame(height: 50)
                             
                             Text("Listening...")
@@ -90,7 +90,16 @@ struct ContentView: View {
                                 .foregroundColor(.gray)
                         }
                     } else {
-                        ProgressView(useSenseVoice ? "Loading SenseVoice..." : "Loading Optimized Model...")
+                        if useSenseVoice {
+                            VStack {
+                                ProgressView("Sherpa-ONNX Framework Required")
+                                Text("See SHERPA_ONNX_INTEGRATION.md")
+                                    .font(.caption2)
+                                    .foregroundColor(.orange)
+                            }
+                        } else {
+                            ProgressView("Loading Optimized Model...")
+                        }
                     }
                     
                     // Controls
@@ -104,7 +113,7 @@ struct ContentView: View {
                                     .font(.title2)
                                     .foregroundColor(.white)
                                     .frame(width: 60, height: 60)
-                                    .background(Color.blue.gradient)
+                                    .background(Colorherpat)
                                     .clipShape(Circle())
                                     .shadow(radius: 4)
                                 
@@ -166,7 +175,7 @@ struct ContentView: View {
         // Link Audio -> Active Manager
         audioRecorder.onAudioBuffer = { buffer in
             if useSenseVoice {
-                senseVoiceManager.processAudio(samples: buffer)
+                sherpaManager.processAudio(samples: buffer)
             } else {
                 whisperManager.processAudio(samples: buffer)
             }
@@ -174,18 +183,18 @@ struct ContentView: View {
     }
     
     private func toggleRecording() {
-        let manager: AnyObject = useSenseVoice ? senseVoiceManager : whisperManager
+        let manager: AnyObject = useSenseVoice ? sherpaManager : whisperManager
         
         if audioRecorder.isRecording {
             if useSenseVoice {
-                senseVoiceManager.manualStop()
+                sherpaManager.manualStop()
             } else {
                 whisperManager.manualStop()
             }
             audioRecorder.stopRecording()
         } else {
             if useSenseVoice {
-                senseVoiceManager.startNewRecording()
+                sherpaManager.startNewRecording()
             } else {
                 whisperManager.startNewRecording()
             }

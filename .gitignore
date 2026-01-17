@@ -4,12 +4,29 @@ SenseVoice/
 node_modules/
 dist/
 .env
-#For Ios Apps
+
+# For iOS Apps
 ios/Pods/
 build/
-#for swift apps
+
+# For Swift apps
 *.xcworkspace
 *.xcuserstate
 *.xcscmblueprint
+
+# Model files (too large for git)
 *.model
 *.onnx
+*.mlpackage
+*.mlmodel
+
+# Sherpa-ONNX artifacts
+sherpa-onnx*.tar.bz2
+sherpa-onnx-v*/
+sherpa-onnx.xcframework/
+sherpa-onnx-sense-voice-*/
+silero_vad.onnx
+
+# SentencePiece tokenizers
+*.bpe.model
+tokens.txt
