@@ -212,7 +212,7 @@ class SenseVoiceManager: ObservableObject, SpeechBufferDelegate {
                 
                 // Convert IDs to String using Tokenizer - convert Int32 to Int
                 let idsAsInt = ids.map { Int($0) }
-                if let decodedText = tokenizer?.decode(idsAsInt) {
+                if let decodedText = try? tokenizer?.decode(idsAsInt) {
                     print("Decoded Text: \(decodedText)")
                     await MainActor.run {
                         self.currentText += decodedText + " "
