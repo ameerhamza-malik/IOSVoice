@@ -1,0 +1,13 @@
+SenseVoice/
+.vscode/
+.DS_Store
+node_modules/
+dist/
+.env
+#For Ios Apps
+ios/Pods/
+build/
+#for swift apps
+*.xcworkspace
+*.xcuserstate
+*.xcscmblueprint
