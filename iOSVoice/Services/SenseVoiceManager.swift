@@ -1,6 +1,6 @@
 import Foundation
 import AVFoundation
-import ONNXRuntime
+import onnxruntime_objc
 
 // TODO: Add SentencePiece dependency to your Xcode project
 // import SentencePiece 
@@ -44,10 +44,10 @@ class SenseVoiceManager: ObservableObject, SpeechBufferDelegate {
         }
         
         do {
-            env = try ORTEnv(loggingLevel: .warning)
-            let sessionOptions = try ORTSessionOptions(env: env!)
+            env = try ORTEnv(loggingLevel: ORTLoggingLevel.warning)
+            let sessionOptions = try ORTSessionOptions()
             // Optimize for Apple Neural Engine if available, or CPU
-            // sessionOptions.appendExecutionProvider("CoreML") 
+            // try sessionOptions.appendCoreMLExecutionProvider(withOptions: [:])
             
             session = try ORTSession(env: env!, modelPath: path, sessionOptions: sessionOptions)
             
@@ -133,7 +133,7 @@ class SenseVoiceManager: ObservableObject, SpeechBufferDelegate {
             let speechData = NSMutableData(bytes: flatFeatures, length: flatFeatures.count * MemoryLayout<Float>.size)
             let speechTensor = try ORTValue(
                 tensorData: speechData,
-                elementType: .float,
+                elementType: ORTTensorElementDataType.float,
                 shape: speechShape
             )
             
@@ -143,7 +143,7 @@ class SenseVoiceManager: ObservableObject, SpeechBufferDelegate {
             let lengthData = Data(bytes: &lengthVal, count: MemoryLayout<Int32>.size)
             let speechLengthsTensor = try ORTValue(
                 tensorData: NSMutableData(data: lengthData),
-                elementType: .int32,
+                elementType: ORTTensorElementDataType.int32,
                 shape: lengthShape
             )
             
@@ -152,7 +152,7 @@ class SenseVoiceManager: ObservableObject, SpeechBufferDelegate {
             let langData = Data(bytes: &langVal, count: MemoryLayout<Int32>.size)
             let languageTensor = try ORTValue(
                 tensorData: NSMutableData(data: langData),
-                elementType: .int32,
+                elementType: ORTTensorElementDataType.int32,
                 shape: lengthShape
             )
             
@@ -161,18 +161,14 @@ class SenseVoiceManager: ObservableObject, SpeechBufferDelegate {
             let normData = Data(bytes: &normVal, count: MemoryLayout<Int32>.size)
             let textNormTensor = try ORTValue(
                 tensorData: NSMutableData(data: normData),
-                elementType: .int32,
+                elementType: ORTTensorElementDataType.int32,
                 shape: lengthShape
             )
             
             // 3. Inference
             let outputs = try session.run(
-                withInputs: [
-                    "speech": speechTensor,
-                    "speech_lengths": speechLengthsTensor,
-                    "language": languageTensor,
-                    "textnorm": textNormTensor
-                ],
+                withInputNames: ["speech", "speech_lengths", "language", "textnorm"],
+                inputValues: [speechTensor, speechLengthsTensor, languageTensor, textNormTensor],
                 outputNames: ["ctc_logits", "encoder_out_lens"],
                 runOptions: nil
             )
