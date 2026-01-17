@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 struct ContentView: View {
     @StateObject private var audioRecorder = AudioRecorder()
     @StateObject private var whisperManager = WhisperManager()
-    @StateObject private var senseVoiceManager = SenseVoiceManager()
+    @StateObject private var sherpaManager = SherpaOnnxManager()
     @State private var useSenseVoice = false
     
     // File Import State
@@ -25,7 +25,7 @@ struct ContentView: View {
                     
                     Picker("Engine", selection: $useSenseVoice) {
                         Text("Whisper").tag(false)
-                        Text("SenseVoice").tag(true)
+                        Text("SenseVoice (Sherpa)").tag(true)
                     }
                     .pickerStyle(SegmentedPickerStyle())
                     .padding(.horizontal)
@@ -122,7 +122,7 @@ struct ContentView: View {
                                     .foregroundColor(.primary)
                             }
                         }
-                        .disabled(!(useSenseVoice ? senseVoiceManager.isModelLoaded : whisperManager.isModelLoaded) || audioRecorder.isRecording || isProcessingFile)
+                        .disabled(!(useSenseVoice ? sherpaManager.isModelLoaded : whisperManager.isModelLoaded) || audioRecorder.isRecording || isProcessingFile)
                         
                         // Mic Button
                         Button(action: {
@@ -144,7 +144,7 @@ struct ContentView: View {
                                     .foregroundColor(.primary)
                             }
                         }
-                        .disabled(!(useSenseVoice ? senseVoiceManager.isModelLoaded : whisperManager.isModelLoaded) || isProcessingFile)
+                        .disabled(!(useSenseVoice ? sherpaManager.isModelLoaded : whisperManager.isModelLoaded) || isProcessingFile)
                     }
                 }
                 .padding(.bottom, 40)
