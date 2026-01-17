@@ -19,6 +19,9 @@ class SenseVoiceManager: ObservableObject, SpeechBufferDelegate {
     
     private let audioProcessor = AudioProcessor()
     private var bufferManager = SpeechBufferManager()
+    private let transcriptionQueue = DispatchQueue(label: "com.iosvoice.sensevoice.transcription", qos: .userInitiated)
+    private let inferenceLock = NSLock()
+    private var isInferencing = false
     
     // Config
     let modelPath: String?
@@ -111,8 +114,23 @@ class SenseVoiceManager: ObservableObject, SpeechBufferDelegate {
     }
     
     func didDetectSpeechEnd(segment: [Float]) {
-        Task {
-            await transcribe(audioSamples: segment)
+        // Check if already transcribing
+        guard inferenceLock.try() else {
+            print("⚠️ Skipping segment - already transcribing")
+            return
+        }
+        
+        // Make a copy to avoid issues if buffer is modified
+        let audioSegment = segment
+        
+        Task { [weak self] in
+            guard let self = self else {
+                self?.inferenceLock.unlock()
+                return
+            }
+            
+            defer { self.inferenceLock.unlock() }
+            await self.transcribe(audioSamples: audioSegment)
         }
     }
     

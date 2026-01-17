@@ -89,13 +89,15 @@ class SpeechBufferManager {
         // Send whatever we have in the buffer, even if it doesn't meet VAD criteria
         if !audioBuffer.isEmpty {
             print("Sending \(audioBuffer.count) samples for transcription")
-            delegate?.didDetectSpeechEnd(segment: audioBuffer)
+            // Make a copy before passing to delegate to avoid concurrent modification
+            let bufferCopy = Array(audioBuffer)
+            delegate?.didDetectSpeechEnd(segment: bufferCopy)
             
             // Reset state
             isSpeechActive = false
             silenceDuration = 0
             speechDuration = 0
-            audioBuffer.removeAll()
+            audioBuffer.removeAll(keepingCapacity: true)
         } else {
             print("⚠️ No audio in buffer - nothing to transcribe")
         }
@@ -107,14 +109,16 @@ class SpeechBufferManager {
         if speechDuration > minSpeechDuration {
             // Valid Segment - send for transcription, keep listening
             print("Silence detected - transcribing segment and continuing to listen")
-            delegate?.didDetectSpeechEnd(segment: audioBuffer)
+            // Make a copy before passing to delegate to avoid concurrent modification
+            let bufferCopy = Array(audioBuffer)
+            delegate?.didDetectSpeechEnd(segment: bufferCopy)
         }
         
         // Reset buffer for next segment, but stay active
         isSpeechActive = false
         silenceDuration = 0
         speechDuration = 0
-        audioBuffer.removeAll()
+        audioBuffer.removeAll(keepingCapacity: true)
     }
     
     private func calculateRMS(_ buffer: [Float]) -> Float {

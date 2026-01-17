@@ -15,6 +15,7 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
     // Use a Task for inference to support async/await
     private var isInferencing = false
     private let inferenceLock = NSLock()
+    private let transcriptionQueue = DispatchQueue(label: "com.iosvoice.transcription", qos: .userInitiated)
     
     // User requested specific optimized model (~626MB)
     let modelName = "openai_whisper-large-v3-v20240930_626MB"
@@ -97,10 +98,26 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
     }
     
     func didDetectSpeechEnd(segment: [Float]) {
+        // Check if already transcribing
+        guard inferenceLock.try() else {
+            print("⚠️ Skipping segment - already transcribing")
+            return
+        }
+        
         print("Speech ended. Transcribing segment (size: \(segment.count))...")
         
-        Task {
-            guard let pipe = whisperKit else { 
+        // Make a copy to avoid issues if buffer is modified
+        let audioSegment = segment
+        
+        Task { [weak self] in
+            guard let self = self else {
+                self?.inferenceLock.unlock()
+                return
+            }
+            
+            defer { self.inferenceLock.unlock() }
+            
+            guard let pipe = self.whisperKit else { 
                 print("ERROR: WhisperKit not loaded")
                 return 
             }
@@ -115,7 +132,7 @@ class WhisperManager: ObservableObject, SpeechBufferDelegate {
                 options.language = nil // Auto-detect language
                 options.skipSpecialTokens = true
                 
-                let results = try await pipe.transcribe(audioArray: segment, decodeOptions: options)
+                let results = try await pipe.transcribe(audioArray: audioSegment, decodeOptions: options)
                 let text = results.map { $0.text }.joined(separator: " ")
                 
                 // Calculate timestamp from recording start

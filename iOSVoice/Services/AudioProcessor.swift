@@ -17,6 +17,12 @@ class AudioProcessor {
     }
     
     func computeLogMelSpectrogram(audioSamples: [Float]) -> [[Float]]? {
+        // Safety check
+        guard !audioSamples.isEmpty, audioSamples.count >= frameLength else {
+            print("⚠️ Audio samples too short for processing: \(audioSamples.count)")
+            return nil
+        }
+        
         // 1. Pre-emphasis (optional, Kaldi usually doesn't need it if not specified)
         // 2. Framing
         let numFrames = (audioSamples.count - frameLength) / frameShift + 1
@@ -37,6 +43,13 @@ class AudioProcessor {
         for i in 0..<numFrames {
             let start = i * frameShift
             let end = start + frameLength
+            
+            // Safety check for bounds
+            guard end <= audioSamples.count else {
+                print("⚠️ Frame \(i) exceeds audio bounds, skipping")
+                continue
+            }
+            
             // Apply window
             var frame = Array(audioSamples[start..<end])
             vDSP_vmul(frame, 1, window, 1, &frame, 1, vDSP_Length(frameLength))
