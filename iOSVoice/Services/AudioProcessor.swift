@@ -24,7 +24,7 @@ class AudioProcessor {
         
         var spectrogram: [[Float]] = []
         var window = [Float](repeating: 0, count: frameLength)
-        vDSP_hamm_window(&window, 1, vDSP_Length(frameLength), 0)
+        vDSP_hamm_window(&window, vDSP_Length(frameLength), 0)
         
         // FFT setup
         let log2n = UInt(round(log2(Double(frameLength))))
