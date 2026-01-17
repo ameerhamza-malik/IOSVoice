@@ -2,7 +2,7 @@ import Foundation
 import AVFoundation
 import Combine
 import Sentencepiece
-
+import SentencepieceTokenizer
 // ONNX Runtime types are available via Objective-C bridging - no import needed 
 
 class SenseVoiceManager: ObservableObject, SpeechBufferDelegate {
@@ -207,7 +207,12 @@ class SenseVoiceManager: ObservableObject, SpeechBufferDelegate {
                 
                 // Decode Int IDs
                 let ids = ctcGreedyDecode(logits: floatArray, timeSteps: outTimeLength, vocabSize: inferredVocabSize)
-                if let decodedText = tokenizer?.decode(ids: ids) {
+                
+                print("SenseVoice Decoded IDs: \(ids)")
+                
+                // Convert IDs to String using Tokenizer - convert Int32 to Int
+                let idsAsInt = ids.map { Int($0) }
+                if let decodedText = tokenizer?.decode(idsAsInt) {
                     print("Decoded Text: \(decodedText)")
                     await MainActor.run {
                         self.currentText += decodedText + " "
