@@ -8,7 +8,7 @@
 #ifndef iOSVoice_Bridging_Header_h
 #define iOSVoice_Bridging_Header_h
 
-// Import Sherpa-ONNX C API
-#import "sherpa-onnx/c-api/c-api.h"
+// Import Sherpa-ONNX C API (using angle brackets for framework headers)
+#import <sherpa-onnx/c-api/c-api.h>
 
 #endif /* iOSVoice_Bridging_Header_h */
