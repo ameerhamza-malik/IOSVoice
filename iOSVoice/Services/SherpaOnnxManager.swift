@@ -1,13 +1,16 @@
 import Foundation
 import AVFoundation
 import Combine
-import sherpa_onnx
+
+// Sherpa-ONNX SenseVoice Manager using C API directly
+// No Swift module - uses bridging header to access C API
 
 protocol SherpaOnnxDelegate: AnyObject {
     func didUpdateAudioLevels(level: Float)
     func didDetectSpeechSegment(text: String)
 }
 
+@MainActor
 class SherpaOnnxManager: ObservableObject {
     
     @Published var currentText = ""
@@ -17,9 +20,9 @@ class SherpaOnnxManager: ObservableObject {
     
     weak var delegate: SherpaOnnxDelegate?
     
-    // Sherpa-ONNX objects
-    private var recognizer: SherpaOnnxOfflineRecognizer?
-    private var vad: SherpaOnnxVoiceActivityDetector?
+    // Sherpa-ONNX C API objects (OpaquePointers)
+    private var recognizer: OpaquePointer?
+    private var vad: OpaquePointer?
     
     private var audioBuffer: [Float] = []
     private let sampleRate: Int = 16000
@@ -33,184 +36,225 @@ class SherpaOnnxManager: ObservableObject {
         setupModel()
     }
     
-    private func setupModel() {
-        print("🔧 Setting up Sherpa-ONNX SenseVoice...")
-        
-        // Configure SenseVoice model
-        var config = sherpaOnnxOfflineRecognizerConfig()
-        
-        // Model paths - adjust based on where you place the model files
-        let modelDir = "sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17"
-        config.modelConfig.senseVoice.model = Bundle.main.path(
-            forResource: "model.int8", 
-            ofType: "onnx", 
-            inDirectory: modelDir
-        ) ?? ""
-        
-        config.modelConfig.tokens = Bundle.main.path(
-            forResource: "tokens", 
-            ofType: "txt", 
-            inDirectory: modelDir
-        ) ?? ""
-        
-        // Configuration
-        config.modelConfig.senseVoice.language = "auto" // Auto-detect language
-        config.modelConfig.senseVoice.useInverseTextNormalization = 1 // Add punctuation
-        config.modelConfig.numThreads = 2 // Adjust based on device
-        config.modelConfig.debug = 0
-        config.modelConfig.provider = "cpu"
-        
-        // Create recognizer
-        recognizer = SherpaOnnxOfflineRecognizer(config: &config)
-        
-        // Setup VAD for automatic speech detection
-        var vadConfig = sherpaOnnxVadModelConfig()
-        if let vadModelPath = Bundle.main.path(forResource: "silero_vad", ofType: "onnx") {
-            vadConfig.sileroVad.model = vadModelPath
-            vadConfig.sileroVad.minSilenceDuration = 0.5  // 500ms silence to split
-            vadConfig.sileroVad.minSpeechDuration = 0.25  // 250ms minimum speech
-            vadConfig.sileroVad.threshold = 0.5
-            vadConfig.sampleRate = Int32(sampleRate)
-            
-            vad = SherpaOnnxVoiceActivityDetector(config: vadConfig, bufferSizeInSeconds: 30)
+    deinit {
+        if let recognizer = recognizer {
+            SherpaOnnxDestroyOfflineRecognizer(recognizer)
         }
-        
-        let success = (recognizer != nil)
-        print(success ? "✅ Sherpa-ONNX loaded successfully" : "❌ Failed to load Sherpa-ONNX")
-        
-        DispatchQueue.main.async {
-            self.isModelLoaded = success
+        if let vad = vad {
+            SherpaOnnxDestroyVoiceActivityDetector(vad)
         }
     }
     
-    func processAudio(samples: [Float]) {
-        processingQueue.async { [weak self] in
-            guard let self = self else { return }
-            
-            // Calculate audio level
-            let rms = sqrt(samples.map { $0 * $0 }.reduce(0, +) / Float(samples.count))
-            DispatchQueue.main.async {
-                self.audioLevel = rms
-            }
-            
-            // Add to buffer
-            self.audioBuffer.append(contentsOf: samples)
-            
-            // Keep buffer size manageable
-            if self.audioBuffer.count > self.maxBufferSize {
-                let overflow = self.audioBuffer.count - self.maxBufferSize
-                self.audioBuffer.removeFirst(overflow)
-            }
-            
-            // TODO: Uncomment after adding sherpa-onnx framework
-            /*
-            guard let vad = self.vad else { return }
-            
-            // Feed to VAD
-            vad.acceptWaveform(samples: samples)
-            
-            // Check if speech detected
-            if vad.isSpeechDetected() {
-                print("🎤 Speech detected")
-            }
-            
-            guard let vad = self.vad else { return }
-            
-            // Feed to VAD
-            vad.acceptWaveform(samples: samples)
-            
-            // Check if speech detected
-            if vad.isSpeechDetected() {
-                print("🎤 Speech detected")
-            }
-            
-            // Process completed speech segments
-            while !vad.isEmpty() {
-                let segment = vad.front()
-                self.transcribeSegment(samples: segment.samples)
-                vad.pop()
-            }O: Uncomment after adding sherpa-onnx framework
-        /*
-        guard let recognizer = recognizer else { return }
-        guard let recognizer = recognizer else { return }
+    private func setupModel() {
+        print("🔧 Setting up Sherpa-ONNX SenseVoice using C API...")
         
-        print("🔄 Transcribing segment (\(samples.count) samples)...")
-        
-        // Create stream
-        var stream = recognizer.createStream()
-        
-        // Accept waveform
-        stream.acceptWaveform(sampleRate: sampleRate, samples: samples)
-        
-        // Decode
-        recognizer.decode(stream: stream)
-        
-        // Get result
-        let result = stream.result
-        let text = result.text
-        
-        if !text.isEmpty {
-            print("✅ Transcribed: \(text)")
-            
-            // Extract language if available
-            let language = result.lang ?? "unknown"
-            if language != "unknown" {
-                print("🌍 Detected language: \(language)")
-            }
-            
-            DispatchQueue.main.async {
-                self.currentText += text + " "
-                self.delegate?.didDetectSpeechSegment(text: text)
-            }
-        }
-        guard !audioBuffer.isEmpty else {
-            print("⚠️ No audio in buffer to transcribe")
+        // Model paths
+        let modelDir = "sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17"
+        guard let modelPath = Bundle.main.path(forResource: "model.int8", ofType: "onnx", inDirectory: modelDir),
+              let tokensPath = Bundle.main.path(forResource: "tokens", ofType: "txt", inDirectory: modelDir) else {
+            print("❌ Model files not found")
             return
         }
         
-        let samples = audioBuffer
-        audioBuffer.removeAll(keepingCapacity: true)
+        // Create SenseVoice config using C API
+        var senseVoiceConfig = SherpaOnnxOfflineSenseVoiceModelConfig(
+            model: strdup(modelPath),
+            language: strdup("auto"),
+            use_itn: 1  // Enable Inverse Text Normalization (punctuation)
+        )
         
-        transcribeSegment(samples: samples)
-    }
-    
-    func startNewRecording() {
-        currentText = ""
-        partialText = ""
-        audioBuffer.removeAll(keepingCapacity: true)
+        var modelConfig = SherpaOnnxOfflineModelConfig(
+            transducer: SherpaOnnxOfflineTransducerModelConfig(encoder: nil, decoder: nil, joiner: nil),
+            paraformer: SherpaOnnxOfflineParaformerModelConfig(model: nil),
+            nemo_ctc: SherpaOnnxOfflineNemoEncDecCtcModelConfig(model: nil),
+            whisper: SherpaOnnxOfflineWhisperModelConfig(encoder: nil, decoder: nil, language: nil, task: nil, tail_paddings: 0),
+            tdnn: SherpaOnnxOfflineTdnnModelConfig(model: nil),
+            tokens: strdup(tokensPath),
+            num_threads: 2,
+            debug: 0,
+            provider: strdup("cpu"),
+            model_type: strdup(""),
+            modeling_unit: strdup("cjkchar"),
+            bpe_vocab: nil,
+            telespeech_ctc: nil,
+            sense_voice: senseVoiceConfig,
+            moonshine: SherpaOnnxOfflineMoonshineModelConfig(preprocessor: nil, encoder: nil, uncached_decoder: nil, cached_decoder: nil),
+            fire_red_asr: SherpaOnnxOfflineFireRedAsrModelConfig(encoder: nil, decoder: nil),
+            dolphin: SherpaOnnxOfflineDolphinModelConfig(model: nil),
+            zipformer_ctc: SherpaOnnxOfflineZipformerCtcModelConfig(model: nil),
+            canary: SherpaOnnxOfflineCanaryModelConfig(encoder: nil, decoder: nil, src_lang: nil, tgt_lang: nil, use_pnc: 0),
+            wenet_ctc: SherpaOnnxOfflineWenetCtcModelConfig(model: nil),
+            omnilingual: SherpaOnnxOfflineOmnilingualAsrCtcModelConfig(model: nil),
+            medasr: SherpaOnnxOfflineMedAsrCtcModelConfig(model: nil),
+            funasr_nano: SherpaOnnxOfflineFunASRNanoModelConfig(
+                encoder_adaptor: nil, llm: nil, embedding: nil, tokenizer: nil,
+                system_prompt: nil, user_prompt: nil, max_new_tokens: 0, temperature: 0, top_p: 0, seed: 0
+            )
+        )
         
-        // TODO: Uncomment after adding sherpa-onnx framework
-        // vad?.reset()
-    }
-    
-    func manualStop() {
-        // Transcribe any remaining audio
-        transcribeAccumulatedAudio()
-    }
-    vad?.reset()
-    }
-    
-    func manualStop() {
-        // Transcribe any remaining audio
-        transcribeAccumulatedAudio()
-    }
-    
-    func resetState() {
-        audioBuffer.removeAll(keepingCapacity: true)
-        currentText = ""
-        partialText = ""
-       atic let modelFile = "model.int8.onnx" // Use quantized for better performance
-        static let tokensFile = "tokens.txt"
-        static let vadModelFile = "silero_vad.onnx"
+        var featConfig = SherpaOnnxFeatureConfig(
+            sample_rate: Int32(sampleRate),
+            feature_dim: 80
+        )
         
-        // Supported languages
-        enum Language: String {
-            case auto = "auto"      // Auto-detect
-            case chinese = "zh"     // Mandarin
-            case english = "en"
-            case cantonese = "yue"  // 粤语
-            case japanese = "ja"
-            case korean = "ko"
+        var lmConfig = SherpaOnnxOfflineLMConfig(model: nil, scale: 0.0)
+        
+        var config = SherpaOnnxOfflineRecognizerConfig(
+            feat_config: featConfig,
+            model_config: modelConfig,
+            lm_config: lmConfig,
+            decoding_method: strdup("greedy_search"),
+            max_active_paths: 4,
+            hotwords_file: nil,
+            hotwords_score: 1.5,
+            rule_fsts: nil,
+            rule_fars: nil,
+            blank_penalty: 0.0,
+            hr: SherpaOnnxHomophoneReplacerConfig(dict_dir: nil, lexicon: nil, rule_fsts: nil)
+        )
+        
+        // Create recognizer
+        recognizer = SherpaOnnxCreateOfflineRecognizer(&config)
+        
+        // Setup VAD (optional but recommended)
+        if let vadModelPath = Bundle.main.path(forResource: "silero_vad", ofType: "onnx") {
+            var vadModelConfig = SherpaOnnxSileroVadModelConfig(
+                model: strdup(vadModelPath),
+                threshold: 0.5,
+                min_silence_duration: 0.5,
+                min_speech_duration: 0.25,
+                window_size: 512,
+                max_speech_duration: 5.0
+            )
+            
+            var vadConfig = SherpaOnnxVadModelConfig(
+                silero_vad: vadModelConfig,
+                sample_rate: Int32(sampleRate),
+                num_threads: 1,
+                provider: strdup("cpu"),
+                debug: 0,
+                ten_vad: SherpaOnnxTenVadModelConfig(
+                    model: nil, threshold: 0, min_silence_duration: 0,
+                    min_speech_duration: 0, window_size: 0, max_speech_duration: 0
+                )
+            )
+            
+            vad = SherpaOnnxCreateVoiceActivityDetector(&vadConfig, 30.0)
+        }
+        
+        let success = (recognizer != nil)
+        isModelLoaded = success
+        print(success ? "✅ Sherpa-ONNX loaded successfully via C API" : "❌ Failed to load Sherpa-ONNX")
+    }
+    
+    func processAudio(_ samples: [Float]) {
+        guard let recognizer = recognizer else { return }
+        
+        processingQueue.async { [weak self] in
+            guard let self = self else { return }
+            
+            self.inferenceLock.lock()
+            defer { self.inferenceLock.unlock() }
+            
+            // Use VAD if available
+            if let vad = self.vad {
+                // Feed audio to VAD
+                samples.withUnsafeBufferPointer { bufferPointer in
+                    SherpaOnnxVoiceActivityDetectorAcceptWaveform(vad, bufferPointer.baseAddress, Int32(samples.count))
+                }
+                
+                // Process detected speech segments
+                while SherpaOnnxVoiceActivityDetectorDetected(vad) != 0 {
+                    // Get speech segment
+                    if let segment = SherpaOnnxVoiceActivityDetectorFront(vad) {
+                        let segmentSamples = Array(UnsafeBufferPointer(start: segment.pointee.samples, count: Int(segment.pointee.n)))
+                        
+                        // Transcribe segment
+                        self.transcribeSegment(segmentSamples, recognizer: recognizer)
+                        
+                        // Clean up
+                        SherpaOnnxDestroySpeechSegment(segment)
+                    }
+                    
+                    // Remove processed segment
+                    SherpaOnnxVoiceActivityDetectorPop(vad)
+                }
+            } else {
+                // No VAD - process entire audio buffer directly
+                self.transcribeSegment(samples, recognizer: recognizer)
+            }
         }
     }
+    
+    private func transcribeSegment(_ samples: [Float], recognizer: OpaquePointer) {
+        // Create offline stream
+        guard let stream = SherpaOnnxCreateOfflineStream(recognizer) else {
+            print("❌ Failed to create stream")
+            return
+        }
+        
+        defer {
+            SherpaOnnxDestroyOfflineStream(stream)
+        }
+        
+        // Feed audio samples
+        samples.withUnsafeBufferPointer { bufferPointer in
+            SherpaOnnxAcceptWaveformOffline(stream, Int32(sampleRate), bufferPointer.baseAddress, Int32(samples.count))
+        }
+        
+        // Decode
+        SherpaOnnxDecodeOfflineStream(recognizer, stream)
+        
+        // Get result
+        if let result = SherpaOnnxGetOfflineStreamResult(stream) {
+            defer {
+                SherpaOnnxDestroyOfflineRecognizerResult(result)
+            }
+            
+            if let textPtr = result.pointee.text {
+                let transcribedText = String(cString: textPtr)
+                
+                // Get language, emotion, event (SenseVoice specific)
+                let language = result.pointee.lang != nil ? String(cString: result.pointee.lang) : ""
+                let emotion = result.pointee.emotion != nil ? String(cString: result.pointee.emotion) : ""
+                let event = result.pointee.event != nil ? String(cString: result.pointee.event) : ""
+                
+                print("🎯 Transcription: \(transcribedText)")
+                if !language.isEmpty { print("   Language: \(language)") }
+                if !emotion.isEmpty { print("   Emotion: \(emotion)") }
+                if !event.isEmpty { print("   Event: \(event)") }
+                
+                // Update UI on main thread
+                DispatchQueue.main.async {
+                    self.currentText = transcribedText
+                    self.delegate?.didDetectSpeechSegment(text: transcribedText)
+                }
+            }
+        }
+    }
+    
+    func reset() {
+        processingQueue.async { [weak self] in
+            guard let self = self else { return }
+            self.inferenceLock.lock()
+            defer { self.inferenceLock.unlock() }
+            
+            self.audioBuffer.removeAll()
+            
+            if let vad = self.vad {
+                SherpaOnnxVoiceActivityDetectorReset(vad)
+            }
+            
+            DispatchQueue.main.async {
+                self.currentText = ""
+                self.partialText = ""
+            }
+        }
+    }
+}
+
+// Helper to duplicate C strings (must be freed later)
+private func strdup(_ string: String?) -> UnsafePointer<Int8>? {
+    guard let string = string else { return nil }
+    return (string as NSString).utf8String
 }
