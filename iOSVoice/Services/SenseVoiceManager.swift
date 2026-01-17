@@ -1,7 +1,7 @@
 import Foundation
 import AVFoundation
-import onnxruntime
 
+// ONNX Runtime types are available via Objective-C bridging - no import needed
 // TODO: Add SentencePiece dependency to your Xcode project
 // import SentencePiece 
 
