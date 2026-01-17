@@ -223,10 +223,6 @@ class SenseVoiceManager: ObservableObject, SpeechBufferDelegate {
                     await MainActor.run {
                         self.currentText += mockOutput + " "
                     }
-                 // Temporary Mock
-                let mockOutput = "[Text ID sequence: \(ids.prefix(5))...]" 
-                await MainActor.run {
-                    self.currentText += mockOutput + " "
                 }
             }
             
