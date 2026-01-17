@@ -9,6 +9,9 @@
 /* Begin PBXBuildFile section */
 		F35DC68F2EE9C14B00EF0377 /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = F35DC68E2EE9C14B00EF0377 /* WhisperKit */; };
 		F35DC6912EE9C14B00EF0377 /* whisperkit-cli in Frameworks */ = {isa = PBXBuildFile; productRef = F35DC6902EE9C14B00EF0377 /* whisperkit-cli */; };
+		F3CBD9DA2F1BE62C00C7CEED /* onnxruntime in Frameworks */ = {isa = PBXBuildFile; productRef = F3CBD9D92F1BE62C00C7CEED /* onnxruntime */; };
+		F3CBD9DC2F1BE62C00C7CEED /* onnxruntime_extensions in Frameworks */ = {isa = PBXBuildFile; productRef = F3CBD9DB2F1BE62C00C7CEED /* onnxruntime_extensions */; };
+		F3CBD9DF2F1BE63F00C7CEED /* SentencepieceTokenizer in Frameworks */ = {isa = PBXBuildFile; productRef = F3CBD9DE2F1BE63F00C7CEED /* SentencepieceTokenizer */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -51,7 +54,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F3CBD9DC2F1BE62C00C7CEED /* onnxruntime_extensions in Frameworks */,
+				F3CBD9DA2F1BE62C00C7CEED /* onnxruntime in Frameworks */,
 				F35DC68F2EE9C14B00EF0377 /* WhisperKit in Frameworks */,
+				F3CBD9DF2F1BE63F00C7CEED /* SentencepieceTokenizer in Frameworks */,
 				F35DC6912EE9C14B00EF0377 /* whisperkit-cli in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -99,6 +105,9 @@
 			packageProductDependencies = (
 				F35DC68E2EE9C14B00EF0377 /* WhisperKit */,
 				F35DC6902EE9C14B00EF0377 /* whisperkit-cli */,
+				F3CBD9D92F1BE62C00C7CEED /* onnxruntime */,
+				F3CBD9DB2F1BE62C00C7CEED /* onnxruntime_extensions */,
+				F3CBD9DE2F1BE63F00C7CEED /* SentencepieceTokenizer */,
 			);
 			productName = iOSVoice;
 			productReference = F35DC6342EE9BCD300EF0377 /* iOSVoice.app */;
@@ -130,6 +139,8 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				F35DC68D2EE9C14B00EF0377 /* XCRemoteSwiftPackageReference "WhisperKit" */,
+				F3CBD9D82F1BE62C00C7CEED /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */,
+				F3CBD9DD2F1BE63F00C7CEED /* XCRemoteSwiftPackageReference "swift-sentencepiece" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = F35DC6352EE9BCD300EF0377 /* Products */;
@@ -381,6 +392,22 @@
 				kind = branch;
 			};
 		};
+		F3CBD9D82F1BE62C00C7CEED /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/microsoft/onnxruntime-swift-package-manager";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.20.0;
+			};
+		};
+		F3CBD9DD2F1BE63F00C7CEED /* XCRemoteSwiftPackageReference "swift-sentencepiece" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/jkrukowski/swift-sentencepiece";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.0.6;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -393,6 +420,21 @@
 			isa = XCSwiftPackageProductDependency;
 			package = F35DC68D2EE9C14B00EF0377 /* XCRemoteSwiftPackageReference "WhisperKit" */;
 			productName = "whisperkit-cli";
+		};
+		F3CBD9D92F1BE62C00C7CEED /* onnxruntime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F3CBD9D82F1BE62C00C7CEED /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */;
+			productName = onnxruntime;
+		};
+		F3CBD9DB2F1BE62C00C7CEED /* onnxruntime_extensions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F3CBD9D82F1BE62C00C7CEED /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */;
+			productName = onnxruntime_extensions;
+		};
+		F3CBD9DE2F1BE63F00C7CEED /* SentencepieceTokenizer */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F3CBD9DD2F1BE63F00C7CEED /* XCRemoteSwiftPackageReference "swift-sentencepiece" */;
+			productName = SentencepieceTokenizer;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
