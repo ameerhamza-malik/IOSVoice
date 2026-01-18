@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		F35DC68F2EE9C14B00EF0377 /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = F35DC68E2EE9C14B00EF0377 /* WhisperKit */; };
 		F35DC6912EE9C14B00EF0377 /* whisperkit-cli in Frameworks */ = {isa = PBXBuildFile; productRef = F35DC6902EE9C14B00EF0377 /* whisperkit-cli */; };
+		F38D18032F1CE2050099C89C /* onnxruntime 2.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = F38D18022F1CE2050099C89C /* onnxruntime 2.xcframework */; };
+		F38D18052F1CE21A0099C89C /* sherpa-onnx 2.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = F38D18042F1CE21A0099C89C /* sherpa-onnx 2.xcframework */; };
 		F3CBD9DA2F1BE62C00C7CEED /* onnxruntime in Frameworks */ = {isa = PBXBuildFile; productRef = F3CBD9D92F1BE62C00C7CEED /* onnxruntime */; };
 		F3CBD9DC2F1BE62C00C7CEED /* onnxruntime_extensions in Frameworks */ = {isa = PBXBuildFile; productRef = F3CBD9DB2F1BE62C00C7CEED /* onnxruntime_extensions */; };
 		F3CBD9DF2F1BE63F00C7CEED /* SentencepieceTokenizer in Frameworks */ = {isa = PBXBuildFile; productRef = F3CBD9DE2F1BE63F00C7CEED /* SentencepieceTokenizer */; };
@@ -16,9 +18,18 @@
 
 /* Begin PBXFileReference section */
 		F35DC6342EE9BCD300EF0377 /* iOSVoice.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iOSVoice.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F38D18022F1CE2050099C89C /* onnxruntime 2.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = "onnxruntime 2.xcframework"; sourceTree = "<group>"; };
+		F38D18042F1CE21A0099C89C /* sherpa-onnx 2.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = "sherpa-onnx 2.xcframework"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		F38D181D2F1CE34C0099C89C /* Exceptions for "sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17" folder in "iOSVoice" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				README.md,
+			);
+			target = F35DC6332EE9BCD300EF0377 /* iOSVoice */;
+		};
 		F3CBD9D72F1BE38F00C7CEED /* Exceptions for "iOSVoice" folder in "iOSVoice" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -47,6 +58,14 @@
 			path = iOSVoiceUITests;
 			sourceTree = "<group>";
 		};
+		F38D18122F1CE34B0099C89C /* sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17 */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				F38D181D2F1CE34C0099C89C /* Exceptions for "sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17" folder in "iOSVoice" target */,
+			);
+			path = "sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17";
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -55,6 +74,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				F3CBD9DC2F1BE62C00C7CEED /* onnxruntime_extensions in Frameworks */,
+				F38D18052F1CE21A0099C89C /* sherpa-onnx 2.xcframework in Frameworks */,
+				F38D18032F1CE2050099C89C /* onnxruntime 2.xcframework in Frameworks */,
 				F3CBD9DA2F1BE62C00C7CEED /* onnxruntime in Frameworks */,
 				F35DC68F2EE9C14B00EF0377 /* WhisperKit in Frameworks */,
 				F3CBD9DF2F1BE63F00C7CEED /* SentencepieceTokenizer in Frameworks */,
@@ -72,6 +93,9 @@
 				F35DC6442EE9BCD600EF0377 /* iOSVoiceTests */,
 				F35DC64E2EE9BCD600EF0377 /* iOSVoiceUITests */,
 				F35DC6352EE9BCD300EF0377 /* Products */,
+				F38D18022F1CE2050099C89C /* onnxruntime 2.xcframework */,
+				F38D18042F1CE21A0099C89C /* sherpa-onnx 2.xcframework */,
+				F38D18122F1CE34B0099C89C /* sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17 */,
 			);
 			sourceTree = "<group>";
 		};
@@ -100,6 +124,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				F35DC6362EE9BCD300EF0377 /* iOSVoice */,
+				F38D18122F1CE34B0099C89C /* sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17 */,
 			);
 			name = iOSVoice;
 			packageProductDependencies = (
@@ -304,6 +329,7 @@
 				DEVELOPMENT_TEAM = 6S4T9GVTMN;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/**";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -314,6 +340,10 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-lc++",
+					"-ObjC",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = braza.iOSVoice;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -337,6 +367,7 @@
 				DEVELOPMENT_TEAM = 6S4T9GVTMN;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/**";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -347,6 +378,10 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-lc++",
+					"-ObjC",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = braza.iOSVoice;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
