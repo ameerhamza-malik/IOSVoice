@@ -65,20 +65,17 @@ class SherpaOnnxManager: ObservableObject {
                 "auto".withCString { langCStr in
                     "cpu".withCString { providerCStr in
                         "greedy_search".withCString { methodCStr in
-                            "cjkchar".withCString { unitCStr in
-                                var config = createOfflineConfig(
-                                    modelPath: modelCStr,
-                                    tokensPath: tokensCStr,
-                                    language: langCStr,
-                                    provider: providerCStr,
-                                    decodingMethod: methodCStr,
-                                    modelingUnit: unitCStr,
-                                    sampleRate: Int32(sampleRate)
-                                )
-                                
-                                // Create recognizer
-                                recognizer = SherpaOnnxCreateOfflineRecognizer(&config)
-                            }
+                            var config = createOfflineConfig(
+                                modelPath: modelCStr,
+                                tokensPath: tokensCStr,
+                                language: langCStr,
+                                provider: providerCStr,
+                                decodingMethod: methodCStr,
+                                sampleRate: Int32(sampleRate)
+                            )
+                            
+                            // Create recognizer
+                            recognizer = SherpaOnnxCreateOfflineRecognizer(&config)
                         }
                     }
                 }
@@ -89,7 +86,7 @@ class SherpaOnnxManager: ObservableObject {
         if let vadModelPath = Bundle.main.path(forResource: "silero_vad", ofType: "onnx") {
             vadModelPath.withCString { vadCStr in
                 "cpu".withCString { providerCStr in
-                    var vadModelConfig = SherpaOnnxSileroVadModelConfig(
+                    let vadModelConfig = SherpaOnnxSileroVadModelConfig(
                         model: vadCStr,
                         threshold: 0.5,
                         min_silence_duration: 0.5,
@@ -240,31 +237,30 @@ class SherpaOnnxManager: ObservableObject {
 }
 
 // Helper function to create config with proper C struct initialization
+// Based on: https://github.com/k2-fsa/sherpa-onnx/blob/master/c-api-examples/sense-voice-c-api.c
 private func createOfflineConfig(
     modelPath: UnsafePointer<Int8>,
     tokensPath: UnsafePointer<Int8>,
     language: UnsafePointer<Int8>,
     provider: UnsafePointer<Int8>,
     decodingMethod: UnsafePointer<Int8>,
-    modelingUnit: UnsafePointer<Int8>,
     sampleRate: Int32
 ) -> SherpaOnnxOfflineRecognizerConfig {
     
-    // SenseVoice config (the one we're using)
+    // SenseVoice config
     var senseVoice = SherpaOnnxOfflineSenseVoiceModelConfig(
         model: modelPath,
         language: language,
         use_itn: 1
     )
     
-    // Model config - only populate what we need for SenseVoice
+    // Offline model config - zero initialize then set only required fields
     var modelConfig = SherpaOnnxOfflineModelConfig()
     modelConfig.sense_voice = senseVoice
     modelConfig.tokens = tokensPath
     modelConfig.num_threads = 2
     modelConfig.debug = 0
     modelConfig.provider = provider
-    modelConfig.modeling_unit = modelingUnit
     
     // Feature config
     var featConfig = SherpaOnnxFeatureConfig(
@@ -272,10 +268,13 @@ private func createOfflineConfig(
         feature_dim: 80
     )
     
-    // LM config (not used for SenseVoice)
-    var lmConfig = SherpaOnnxOfflineLMConfig()
+    // LM config - zero initialize (not used for SenseVoice)
+    var lmConfig = SherpaOnnxOfflineLMConfig(
+        model: nil,
+        scale: 0.0
+    )
     
-    // Final recognizer config
+    // Recognizer config
     var config = SherpaOnnxOfflineRecognizerConfig()
     config.feat_config = featConfig
     config.model_config = modelConfig
