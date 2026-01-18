@@ -75,8 +75,8 @@ class SherpaOnnxManager: ObservableObject {
         print("✓ Model path: \(modelPath)")
         print("✓ Tokens path: \(tokensPath)")
         
-        // Use helper function to create config with all required C structs
-        modelPath.withCString { modelCStr in
+        // Create recognizer with proper string lifetime management
+        recognizer = modelPath.withCString { modelCStr in
             tokensPath.withCString { tokensCStr in
                 "auto".withCString { langCStr in
                     "cpu".withCString { providerCStr in
@@ -90,8 +90,8 @@ class SherpaOnnxManager: ObservableObject {
                                 sampleRate: Int32(sampleRate)
                             )
                             
-                            // Create recognizer
-                            recognizer = SherpaOnnxCreateOfflineRecognizer(&config)
+                            // Create recognizer inside the closure while strings are valid
+                            return SherpaOnnxCreateOfflineRecognizer(&config)
                         }
                     }
                 }
