@@ -24,6 +24,7 @@ build/
 sherpa-onnx*.tar.bz2
 sherpa-onnx-v*/
 sherpa-onnx.xcframework/
+onnxruntime.xcframework/
 sherpa-onnx-sense-voice-*/
 silero_vad.onnx
 
