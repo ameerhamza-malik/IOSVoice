@@ -24,6 +24,10 @@ class SherpaOnnxManager: ObservableObject {
     private var recognizer: OpaquePointer?
     private var vad: OpaquePointer?
     
+    // Keep strings alive for C API
+    private var modelPathString: String?
+    private var tokensPathString: String?
+    
     private var audioBuffer: [Float] = []
     private let sampleRate: Int = 16000
     private let maxBufferSize: Int = 16000 * 30 // 30 seconds max
@@ -75,23 +79,47 @@ class SherpaOnnxManager: ObservableObject {
         print("✓ Model path: \(modelPath)")
         print("✓ Tokens path: \(tokensPath)")
         
-        // Create recognizer with proper string lifetime management
-        recognizer = modelPath.withCString { modelCStr in
+        // Store paths to keep them alive
+        self.modelPathString = modelPath
+        self.tokensPathString = tokensPath
+        
+        // Create config - use strdup to allocate strings on heap
+        var senseVoiceConfig = SherpaOnnxOfflineSenseVoiceModelConfig()
+        var offlineModelConfig = SherpaOnnxOfflineModelConfig()
+        var recognizerConfig = SherpaOnnxOfflineRecognizerConfig()
+        
+        modelPath.withCString { modelCStr in
             tokensPath.withCString { tokensCStr in
                 "auto".withCString { langCStr in
                     "cpu".withCString { providerCStr in
                         "greedy_search".withCString { methodCStr in
-                            var config = createOfflineConfig(
-                                modelPath: modelCStr,
-                                tokensPath: tokensCStr,
-                                language: langCStr,
-                                provider: providerCStr,
-                                decodingMethod: methodCStr,
-                                sampleRate: Int32(sampleRate)
-                            )
+                            // Initialize SenseVoice config
+                            withUnsafeMutablePointer(to: &senseVoiceConfig) { ptr in
+                                memset(ptr, 0, MemoryLayout<SherpaOnnxOfflineSenseVoiceModelConfig>.size)
+                            }
+                            senseVoiceConfig.model = strdup(modelCStr)
+                            senseVoiceConfig.language = strdup(langCStr)
+                            senseVoiceConfig.use_itn = 1
                             
-                            // Create recognizer inside the closure while strings are valid
-                            return SherpaOnnxCreateOfflineRecognizer(&config)
+                            // Initialize model config
+                            withUnsafeMutablePointer(to: &offlineModelConfig) { ptr in
+                                memset(ptr, 0, MemoryLayout<SherpaOnnxOfflineModelConfig>.size)
+                            }
+                            offlineModelConfig.debug = 1
+                            offlineModelConfig.num_threads = 1
+                            offlineModelConfig.provider = strdup(providerCStr)
+                            offlineModelConfig.tokens = strdup(tokensCStr)
+                            offlineModelConfig.sense_voice = senseVoiceConfig
+                            
+                            // Initialize recognizer config
+                            withUnsafeMutablePointer(to: &recognizerConfig) { ptr in
+                                memset(ptr, 0, MemoryLayout<SherpaOnnxOfflineRecognizerConfig>.size)
+                            }
+                            recognizerConfig.decoding_method = strdup(methodCStr)
+                            recognizerConfig.model_config = offlineModelConfig
+                            
+                            // Create recognizer
+                            recognizer = SherpaOnnxCreateOfflineRecognizer(&recognizerConfig)
                         }
                     }
                 }
@@ -250,46 +278,4 @@ class SherpaOnnxManager: ObservableObject {
             self.partialText = ""
         }
     }
-}
-
-// Helper function to create config with proper C struct initialization
-// Based on: https://github.com/k2-fsa/sherpa-onnx/blob/master/c-api-examples/sense-voice-c-api.c
-private func createOfflineConfig(
-    modelPath: UnsafePointer<Int8>,
-    tokensPath: UnsafePointer<Int8>,
-    language: UnsafePointer<Int8>,
-    provider: UnsafePointer<Int8>,
-    decodingMethod: UnsafePointer<Int8>,
-    sampleRate: Int32
-) -> SherpaOnnxOfflineRecognizerConfig {
-    
-    // Step 1: Create SherpaOnnxOfflineSenseVoiceModelConfig (memset equivalent)
-    var senseVoiceConfig = SherpaOnnxOfflineSenseVoiceModelConfig()
-    withUnsafeMutablePointer(to: &senseVoiceConfig) { ptr in
-        memset(ptr, 0, MemoryLayout<SherpaOnnxOfflineSenseVoiceModelConfig>.size)
-    }
-    senseVoiceConfig.model = modelPath
-    senseVoiceConfig.language = language
-    senseVoiceConfig.use_itn = 1
-    
-    // Step 2: Create SherpaOnnxOfflineModelConfig (memset equivalent)
-    var offlineModelConfig = SherpaOnnxOfflineModelConfig()
-    withUnsafeMutablePointer(to: &offlineModelConfig) { ptr in
-        memset(ptr, 0, MemoryLayout<SherpaOnnxOfflineModelConfig>.size)
-    }
-    offlineModelConfig.debug = 1
-    offlineModelConfig.num_threads = 1
-    offlineModelConfig.provider = provider
-    offlineModelConfig.tokens = tokensPath
-    offlineModelConfig.sense_voice = senseVoiceConfig
-    
-    // Step 3: Create SherpaOnnxOfflineRecognizerConfig (memset equivalent)
-    var recognizerConfig = SherpaOnnxOfflineRecognizerConfig()
-    withUnsafeMutablePointer(to: &recognizerConfig) { ptr in
-        memset(ptr, 0, MemoryLayout<SherpaOnnxOfflineRecognizerConfig>.size)
-    }
-    recognizerConfig.decoding_method = decodingMethod
-    recognizerConfig.model_config = offlineModelConfig
-    
-    return recognizerConfig
 }
