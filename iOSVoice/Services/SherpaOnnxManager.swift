@@ -60,8 +60,8 @@ class SherpaOnnxManager: ObservableObject {
         }
         
         // Try to find model files
-        let modelPath = Bundle.main.path(forResource: "model.int8", ofType: "onnx", inDirectory: modelDir)
-        let tokensPath = Bundle.main.path(forResource: "tokens", ofType: "txt", inDirectory: modelDir)
+        let modelPath = Bundle.main.path(forResource: "model.int8", ofType: "onnx")
+        let tokensPath = Bundle.main.path(forResource: "tokens", ofType: "txt")
         
         print("🔍 Looking in directory: \(modelDir)")
         print("🔍 Model path result: \(modelPath ?? "nil")")
