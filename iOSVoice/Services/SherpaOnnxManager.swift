@@ -83,43 +83,36 @@ class SherpaOnnxManager: ObservableObject {
         self.modelPathString = modelPath
         self.tokensPathString = tokensPath
         
-        // Create config - use strdup to allocate strings on heap
-        var senseVoiceConfig = SherpaOnnxOfflineSenseVoiceModelConfig()
-        var offlineModelConfig = SherpaOnnxOfflineModelConfig()
-        var recognizerConfig = SherpaOnnxOfflineRecognizerConfig()
-        
-        modelPath.withCString { modelCStr in
+        // Create recognizer - all initialization must happen in withCString scope
+        recognizer = modelPath.withCString { modelCStr in
             tokensPath.withCString { tokensCStr in
                 "auto".withCString { langCStr in
                     "cpu".withCString { providerCStr in
                         "greedy_search".withCString { methodCStr in
-                            // Initialize SenseVoice config
-                            withUnsafeMutablePointer(to: &senseVoiceConfig) { ptr in
-                                memset(ptr, 0, MemoryLayout<SherpaOnnxOfflineSenseVoiceModelConfig>.size)
-                            }
-                            senseVoiceConfig.model = strdup(modelCStr)
-                            senseVoiceConfig.language = strdup(langCStr)
+                            // Step 1: Create and zero-initialize SenseVoice config
+                            var senseVoiceConfig = SherpaOnnxOfflineSenseVoiceModelConfig()
+                            memset(&senseVoiceConfig, 0, MemoryLayout<SherpaOnnxOfflineSenseVoiceModelConfig>.size)
+                            senseVoiceConfig.model = modelCStr
+                            senseVoiceConfig.language = langCStr
                             senseVoiceConfig.use_itn = 1
                             
-                            // Initialize model config
-                            withUnsafeMutablePointer(to: &offlineModelConfig) { ptr in
-                                memset(ptr, 0, MemoryLayout<SherpaOnnxOfflineModelConfig>.size)
-                            }
+                            // Step 2: Create and zero-initialize model config
+                            var offlineModelConfig = SherpaOnnxOfflineModelConfig()
+                            memset(&offlineModelConfig, 0, MemoryLayout<SherpaOnnxOfflineModelConfig>.size)
                             offlineModelConfig.debug = 1
                             offlineModelConfig.num_threads = 1
-                            offlineModelConfig.provider = strdup(providerCStr)
-                            offlineModelConfig.tokens = strdup(tokensCStr)
+                            offlineModelConfig.provider = providerCStr
+                            offlineModelConfig.tokens = tokensCStr
                             offlineModelConfig.sense_voice = senseVoiceConfig
                             
-                            // Initialize recognizer config
-                            withUnsafeMutablePointer(to: &recognizerConfig) { ptr in
-                                memset(ptr, 0, MemoryLayout<SherpaOnnxOfflineRecognizerConfig>.size)
-                            }
-                            recognizerConfig.decoding_method = strdup(methodCStr)
+                            // Step 3: Create and zero-initialize recognizer config
+                            var recognizerConfig = SherpaOnnxOfflineRecognizerConfig()
+                            memset(&recognizerConfig, 0, MemoryLayout<SherpaOnnxOfflineRecognizerConfig>.size)
+                            recognizerConfig.decoding_method = methodCStr
                             recognizerConfig.model_config = offlineModelConfig
                             
-                            // Create recognizer
-                            recognizer = SherpaOnnxCreateOfflineRecognizer(&recognizerConfig)
+                            // Create recognizer while all C strings are valid
+                            return SherpaOnnxCreateOfflineRecognizer(&recognizerConfig)
                         }
                     }
                 }
