@@ -98,18 +98,12 @@ class SherpaOnnxManager: ObservableObject {
                         max_speech_duration: 5.0
                     )
                     
-                    var tenVad = SherpaOnnxTenVadModelConfig(
-                        model: nil, threshold: 0, min_silence_duration: 0,
-                        min_speech_duration: 0, window_size: 0, max_speech_duration: 0
-                    )
-                    
                     var vadConfig = SherpaOnnxVadModelConfig(
                         silero_vad: vadModelConfig,
                         sample_rate: Int32(sampleRate),
                         num_threads: 1,
                         provider: providerCStr,
-                        debug: 0,
-                        ten_vad: tenVad
+                        debug: 0
                     )
                     
                     vad = SherpaOnnxCreateVoiceActivityDetector(&vadConfig, 30.0)
