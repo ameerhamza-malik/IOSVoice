@@ -113,7 +113,7 @@ struct ContentView: View {
                                     .font(.title2)
                                     .foregroundColor(.white)
                                     .frame(width: 60, height: 60)
-                                    .background(Colorherpat)
+                                    .background(Color.blue)
                                     .clipShape(Circle())
                                     .shadow(radius: 4)
                                 
