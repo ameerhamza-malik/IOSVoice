@@ -152,6 +152,7 @@ class SherpaOnnxManager: ObservableObject {
     
     func processAudio(_ samples: [Float]) {
         guard let recognizer = recognizer else { return }
+        guard !samples.isEmpty else { return }
         
         processingQueue.async { [weak self] in
             guard let self = self else { return }
@@ -161,10 +162,14 @@ class SherpaOnnxManager: ObservableObject {
             
             // Use VAD if available
             if let vad = self.vad {
-                // Feed audio to VAD
-                samples.withUnsafeBufferPointer { bufferPointer in
-                    SherpaOnnxVoiceActivityDetectorAcceptWaveform(vad, bufferPointer.baseAddress, Int32(samples.count))
+                // Feed audio to VAD - ensure valid buffer
+                let vadResult = samples.withUnsafeBufferPointer { bufferPointer -> Bool in
+                    guard let baseAddress = bufferPointer.baseAddress else { return false }
+                    SherpaOnnxVoiceActivityDetectorAcceptWaveform(vad, baseAddress, Int32(samples.count))
+                    return true
                 }
+                
+                guard vadResult else { return }
                 
                 // Process detected speech segments
                 while SherpaOnnxVoiceActivityDetectorDetected(vad) != 0 {
@@ -190,6 +195,12 @@ class SherpaOnnxManager: ObservableObject {
     }
     
     private func transcribeSegment(_ samples: [Float], recognizer: OpaquePointer) {
+        // Validate input
+        guard !samples.isEmpty else {
+            print("⚠️ Empty audio buffer, skipping")
+            return
+        }
+        
         // Create offline stream
         guard let stream = SherpaOnnxCreateOfflineStream(recognizer) else {
             print("❌ Failed to create stream")
@@ -200,10 +211,17 @@ class SherpaOnnxManager: ObservableObject {
             SherpaOnnxDestroyOfflineStream(stream)
         }
         
-        // Feed audio samples
-        samples.withUnsafeBufferPointer { bufferPointer in
-            SherpaOnnxAcceptWaveformOffline(stream, Int32(sampleRate), bufferPointer.baseAddress, Int32(samples.count))
+        // Feed audio samples - ensure buffer pointer is valid
+        let result = samples.withUnsafeBufferPointer { bufferPointer -> Bool in
+            guard let baseAddress = bufferPointer.baseAddress else {
+                print("❌ Invalid buffer pointer")
+                return false
+            }
+            SherpaOnnxAcceptWaveformOffline(stream, Int32(sampleRate), baseAddress, Int32(samples.count))
+            return true
         }
+        
+        guard result else { return }
         
         // Decode
         SherpaOnnxDecodeOfflineStream(recognizer, stream)
