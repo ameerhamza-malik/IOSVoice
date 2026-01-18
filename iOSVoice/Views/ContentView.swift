@@ -175,7 +175,7 @@ struct ContentView: View {
         // Link Audio -> Active Manager
         audioRecorder.onAudioBuffer = { buffer in
             if useSenseVoice {
-                sherpaManager.processAudio(samples: buffer)
+                sherpaManager.processAudio(buffer)
             } else {
                 whisperManager.processAudio(samples: buffer)
             }

@@ -226,6 +226,23 @@ class SherpaOnnxManager: ObservableObject {
             }
         }
     }
+    
+    func manualStop() {
+        // Process any remaining audio in buffer
+        if !audioBuffer.isEmpty {
+            processAudio(audioBuffer)
+            audioBuffer.removeAll()
+        }
+    }
+    
+    func startNewRecording() {
+        // Clear previous state
+        audioBuffer.removeAll()
+        DispatchQueue.main.async {
+            self.currentText = ""
+            self.partialText = ""
+        }
+    }
 }
 
 // Helper function to create config with proper C struct initialization
@@ -239,13 +256,6 @@ private func createOfflineConfig(
     sampleRate: Int32
 ) -> SherpaOnnxOfflineRecognizerConfig {
     
-    // Create empty model configs
-    var transducer = SherpaOnnxOfflineTransducerModelConfig(encoder: nil, decoder: nil, joiner: nil)
-    var paraformer = SherpaOnnxOfflineParaformerModelConfig(model: nil)
-    var nemoCtc = SherpaOnnxOfflineNemoEncDecCtcModelConfig(model: nil)
-    var whisper = SherpaOnnxOfflineWhisperModelConfig(encoder: nil, decoder: nil, language: nil, task: nil, tail_paddings: 0)
-    var tdnn = SherpaOnnxOfflineTdnnModelConfig(model: nil)
-    
     // SenseVoice config (the one we're using)
     var senseVoice = SherpaOnnxOfflineSenseVoiceModelConfig(
         model: modelPath,
@@ -253,46 +263,14 @@ private func createOfflineConfig(
         use_itn: 1
     )
     
-    // Empty model configs for other models
-    var moonshine = SherpaOnnxOfflineMoonshineModelConfig(preprocessor: nil, encoder: nil, uncached_decoder: nil, cached_decoder: nil)
-    var fireRedAsr = SherpaOnnxOfflineFireRedAsrModelConfig(encoder: nil, decoder: nil)
-    var dolphin = SherpaOnnxOfflineDolphinModelConfig(model: nil)
-    var zipformerCtc = SherpaOnnxOfflineZipformerCtcModelConfig(model: nil)
-    var canary = SherpaOnnxOfflineCanaryModelConfig(encoder: nil, decoder: nil, src_lang: nil, tgt_lang: nil, use_pnc: 0)
-    var wenetCtc = SherpaOnnxOfflineWenetCtcModelConfig(model: nil)
-    var omnilingual = SherpaOnnxOfflineOmnilingualAsrCtcModelConfig(model: nil)
-    var medasr = SherpaOnnxOfflineMedAsrCtcModelConfig(model: nil)
-    var funasrNano = SherpaOnnxOfflineFunASRNanoModelConfig(
-        encoder_adaptor: nil, llm: nil, embedding: nil, tokenizer: nil,
-        system_prompt: nil, user_prompt: nil, max_new_tokens: 0, temperature: 0, top_p: 0, seed: 0
-    )
-    
-    // Model config
-    var modelConfig = SherpaOnnxOfflineModelConfig(
-        transducer: transducer,
-        paraformer: paraformer,
-        nemo_ctc: nemoCtc,
-        whisper: whisper,
-        tdnn: tdnn,
-        tokens: tokensPath,
-        num_threads: 2,
-        debug: 0,
-        provider: provider,
-        model_type: nil,
-        modeling_unit: modelingUnit,
-        bpe_vocab: nil,
-        telespeech_ctc: nil,
-        sense_voice: senseVoice,
-        moonshine: moonshine,
-        fire_red_asr: fireRedAsr,
-        dolphin: dolphin,
-        zipformer_ctc: zipformerCtc,
-        canary: canary,
-        wenet_ctc: wenetCtc,
-        omnilingual: omnilingual,
-        medasr: medasr,
-        funasr_nano: funasrNano
-    )
+    // Model config - only populate what we need for SenseVoice
+    var modelConfig = SherpaOnnxOfflineModelConfig()
+    modelConfig.sense_voice = senseVoice
+    modelConfig.tokens = tokensPath
+    modelConfig.num_threads = 2
+    modelConfig.debug = 0
+    modelConfig.provider = provider
+    modelConfig.modeling_unit = modelingUnit
     
     // Feature config
     var featConfig = SherpaOnnxFeatureConfig(
@@ -301,23 +279,17 @@ private func createOfflineConfig(
     )
     
     // LM config (not used for SenseVoice)
-    var lmConfig = SherpaOnnxOfflineLMConfig(model: nil, scale: 0.0)
-    
-    // Homophone replacer (not used)
-    var hr = SherpaOnnxHomophoneReplacerConfig(dict_dir: nil, lexicon: nil, rule_fsts: nil)
+    var lmConfig = SherpaOnnxOfflineLMConfig()
     
     // Final recognizer config
-    return SherpaOnnxOfflineRecognizerConfig(
-        feat_config: featConfig,
-        model_config: modelConfig,
-        lm_config: lmConfig,
-        decoding_method: decodingMethod,
-        max_active_paths: 4,
-        hotwords_file: nil,
-        hotwords_score: 1.5,
-        rule_fsts: nil,
-        rule_fars: nil,
-        blank_penalty: 0.0,
-        hr: hr
-    )
+    var config = SherpaOnnxOfflineRecognizerConfig()
+    config.feat_config = featConfig
+    config.model_config = modelConfig
+    config.lm_config = lmConfig
+    config.decoding_method = decodingMethod
+    config.max_active_paths = 4
+    config.hotwords_score = 1.5
+    config.blank_penalty = 0.0
+    
+    return config
 }
