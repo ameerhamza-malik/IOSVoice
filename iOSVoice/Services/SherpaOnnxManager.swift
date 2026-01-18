@@ -263,42 +263,33 @@ private func createOfflineConfig(
     sampleRate: Int32
 ) -> SherpaOnnxOfflineRecognizerConfig {
     
-    // SenseVoice config
-    var senseVoice = SherpaOnnxOfflineSenseVoiceModelConfig(
-        model: modelPath,
-        language: language,
-        use_itn: 1
-    )
+    // Step 1: Create SherpaOnnxOfflineSenseVoiceModelConfig (memset equivalent)
+    var senseVoiceConfig = SherpaOnnxOfflineSenseVoiceModelConfig()
+    withUnsafeMutablePointer(to: &senseVoiceConfig) { ptr in
+        memset(ptr, 0, MemoryLayout<SherpaOnnxOfflineSenseVoiceModelConfig>.size)
+    }
+    senseVoiceConfig.model = modelPath
+    senseVoiceConfig.language = language
+    senseVoiceConfig.use_itn = 1
     
-    // Offline model config - zero initialize then set only required fields
-    var modelConfig = SherpaOnnxOfflineModelConfig()
-    modelConfig.sense_voice = senseVoice
-    modelConfig.tokens = tokensPath
-    modelConfig.num_threads = 2
-    modelConfig.debug = 0
-    modelConfig.provider = provider
+    // Step 2: Create SherpaOnnxOfflineModelConfig (memset equivalent)
+    var offlineModelConfig = SherpaOnnxOfflineModelConfig()
+    withUnsafeMutablePointer(to: &offlineModelConfig) { ptr in
+        memset(ptr, 0, MemoryLayout<SherpaOnnxOfflineModelConfig>.size)
+    }
+    offlineModelConfig.debug = 1
+    offlineModelConfig.num_threads = 1
+    offlineModelConfig.provider = provider
+    offlineModelConfig.tokens = tokensPath
+    offlineModelConfig.sense_voice = senseVoiceConfig
     
-    // Feature config
-    var featConfig = SherpaOnnxFeatureConfig(
-        sample_rate: sampleRate,
-        feature_dim: 80
-    )
+    // Step 3: Create SherpaOnnxOfflineRecognizerConfig (memset equivalent)
+    var recognizerConfig = SherpaOnnxOfflineRecognizerConfig()
+    withUnsafeMutablePointer(to: &recognizerConfig) { ptr in
+        memset(ptr, 0, MemoryLayout<SherpaOnnxOfflineRecognizerConfig>.size)
+    }
+    recognizerConfig.decoding_method = decodingMethod
+    recognizerConfig.model_config = offlineModelConfig
     
-    // LM config - zero initialize (not used for SenseVoice)
-    var lmConfig = SherpaOnnxOfflineLMConfig(
-        model: nil,
-        scale: 0.0
-    )
-    
-    // Recognizer config
-    var config = SherpaOnnxOfflineRecognizerConfig()
-    config.feat_config = featConfig
-    config.model_config = modelConfig
-    config.lm_config = lmConfig
-    config.decoding_method = decodingMethod
-    config.max_active_paths = 4
-    config.hotwords_score = 1.5
-    config.blank_penalty = 0.0
-    
-    return config
+    return recognizerConfig
 }
