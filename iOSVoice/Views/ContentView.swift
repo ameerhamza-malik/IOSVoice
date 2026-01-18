@@ -206,21 +206,34 @@ struct ContentView: View {
         print("Attempting to access file: \(url.absoluteString)")
         guard url.startAccessingSecurityScopedResource() else {
             print("ERROR: startAccessingSecurityScopedResource returned FALSE. Permission denied by system.")
-            // Try to read anyway? Sometimes standard files work? 
-            // Usually failure here means we really can't read it.
             return
         }
         defer { url.stopAccessingSecurityScopedResource() }
         
         print("Successfully accessed security scoped resource.")
         isProcessingFile = true
-        whisperManager.resetState()
+        
+        // Reset state for active manager
+        if useSenseVoice {
+            sherpaManager.startNewRecording()
+        } else {
+            whisperManager.resetState()
+        }
         
         Task {
             do {
                 let samples = try await audioFileService.loadAudio(url: url)
-                // Use simulated live stream instead of one-shot
-                await whisperManager.simulateLiveStream(samples: samples)
+                print("📁 Loaded \(samples.count) audio samples from file")
+                
+                if useSenseVoice {
+                    // Process through SenseVoice
+                    print("🎙️ Processing file through SenseVoice...")
+                    sherpaManager.processAudio(samples)
+                } else {
+                    // Process through WhisperKit
+                    print("🎙️ Processing file through WhisperKit...")
+                    await whisperManager.simulateLiveStream(samples: samples)
+                }
             } catch {
                 print("File Processing Error: \(error)")
             }
