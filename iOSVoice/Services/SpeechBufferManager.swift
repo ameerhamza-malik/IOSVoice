@@ -102,6 +102,7 @@ class SpeechBufferManager {
             print("⚠️ No audio in buffer - nothing to transcribe")
         }
     }
+    //hello
     
     private func finalizeSegment() {
         guard isSpeechActive else { return }
