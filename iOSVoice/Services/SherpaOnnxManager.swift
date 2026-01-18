@@ -48,10 +48,26 @@ class SherpaOnnxManager: ObservableObject {
     private func setupModel() {
         print("🔧 Setting up Sherpa-ONNX SenseVoice using C API...")
         
-        // Model paths
+        // Model paths - debug bundle contents first
         let modelDir = "sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17"
-        guard let modelPath = Bundle.main.path(forResource: "model.int8", ofType: "onnx", inDirectory: modelDir),
-              let tokensPath = Bundle.main.path(forResource: "tokens", ofType: "txt", inDirectory: modelDir) else {
+        
+        // Debug: List bundle contents
+        if let bundlePath = Bundle.main.resourcePath {
+            print("📦 Bundle path: \(bundlePath)")
+            if let items = try? FileManager.default.contentsOfDirectory(atPath: bundlePath) {
+                print("📦 Bundle contents: \(items.filter { $0.contains("sherpa") })")
+            }
+        }
+        
+        // Try to find model files
+        let modelPath = Bundle.main.path(forResource: "model.int8", ofType: "onnx", inDirectory: modelDir)
+        let tokensPath = Bundle.main.path(forResource: "tokens", ofType: "txt", inDirectory: modelDir)
+        
+        print("🔍 Looking in directory: \(modelDir)")
+        print("🔍 Model path result: \(modelPath ?? "nil")")
+        print("🔍 Tokens path result: \(tokensPath ?? "nil")")
+        
+        guard let modelPath = modelPath, let tokensPath = tokensPath else {
             print("❌ Model files not found in bundle: \(modelDir)")
             return
         }
