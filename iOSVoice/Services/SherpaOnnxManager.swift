@@ -223,14 +223,20 @@ class SherpaOnnxManager: ObservableObject {
         
         guard result else { return }
         
+        print("🔄 Starting decoding for \(samples.count) samples...")
+        
         // Decode
         SherpaOnnxDecodeOfflineStream(recognizer, stream)
+        
+        print("✓ Decoding complete, getting result...")
         
         // Get result
         if let result = SherpaOnnxGetOfflineStreamResult(stream) {
             defer {
                 SherpaOnnxDestroyOfflineRecognizerResult(result)
             }
+            
+            print("✓ Got result pointer")
             
             if let textPtr = result.pointee.text {
                 let transcribedText = String(cString: textPtr)
@@ -240,17 +246,24 @@ class SherpaOnnxManager: ObservableObject {
                 let emotion = result.pointee.emotion != nil ? String(cString: result.pointee.emotion) : ""
                 let event = result.pointee.event != nil ? String(cString: result.pointee.event) : ""
                 
-                print("🎯 Transcription: \(transcribedText)")
+                print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                print("🎯 SenseVoice Transcription Result:")
+                print("   Text: \(transcribedText)")
                 if !language.isEmpty { print("   Language: \(language)") }
                 if !emotion.isEmpty { print("   Emotion: \(emotion)") }
                 if !event.isEmpty { print("   Event: \(event)") }
+                print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
                 
                 // Update UI on main thread
                 DispatchQueue.main.async {
                     self.currentText = transcribedText
                     self.delegate?.didDetectSpeechSegment(text: transcribedText)
                 }
+            } else {
+                print("⚠️ Result text pointer is nil")
             }
+        } else {
+            print("❌ Failed to get result from stream")
         }
     }
     
