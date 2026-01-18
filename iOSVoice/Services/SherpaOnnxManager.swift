@@ -95,6 +95,7 @@ class SherpaOnnxManager: ObservableObject {
                             senseVoiceConfig.model = modelCStr
                             senseVoiceConfig.language = langCStr
                             senseVoiceConfig.use_itn = 1
+                            senseVoiceConfig.ban_emo_unk = 1  // Prevent <|EMO_UNKNOWN|> from being returned
                             
                             // Step 2: Create and zero-initialize model config
                             var offlineModelConfig = SherpaOnnxOfflineModelConfig()
